@@ -100,7 +100,7 @@ enum DisplayMode
    * User can directly define the control mode of horizon
    * and vertical directions and send control datas to aircraft. */
   MODE_NAVI_SDK_CTRL=DJI::OSDK::VehicleStatus::DisplayMode::MODE_NAVI_SDK_CTRL,
-  
+
   /*! drone is forced to land, might due to low battery */
   MODE_FORCE_AUTO_LANDING=DJI::OSDK::VehicleStatus::DisplayMode::MODE_FORCE_AUTO_LANDING,
   /*! drone will search for the last position where the rc is not lost */

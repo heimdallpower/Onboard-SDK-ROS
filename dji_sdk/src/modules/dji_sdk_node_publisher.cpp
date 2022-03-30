@@ -826,6 +826,23 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
     p->trigger_publisher.publish(trigTime);
   }
+
+  Telemetry::TypeMap<Telemetry::TOPIC_ANGULAR_RATE_RAW>::type angular_rate_FRD =
+  vehicle->subscribe->getValue<Telemetry::TOPIC_ANGULAR_RATE_RAW>();
+
+  Telemetry::TypeMap<Telemetry::TOPIC_ACCELERATION_RAW>::type acceleration_raw_FRD =
+    vehicle->subscribe->getValue<Telemetry::TOPIC_ACCELERATION_RAW>();
+
+  sensor_msgs::Imu imu_raw_FLU;
+  imu_raw_FLU.angular_velocity.x    =  angular_rate_FRD.x;
+  imu_raw_FLU.angular_velocity.y    = -angular_rate_FRD.y;
+  imu_raw_FLU.angular_velocity.z    = -angular_rate_FRD.z;
+  imu_raw_FLU.linear_acceleration.x =  acceleration_raw_FRD.x * p->gravity_const;
+  imu_raw_FLU.linear_acceleration.y = -acceleration_raw_FRD.y * p->gravity_const;
+  imu_raw_FLU.linear_acceleration.z = -acceleration_raw_FRD.z * p->gravity_const;
+  imu_raw_FLU.header.stamp = ros::Time::now();
+  imu_raw_FLU.header.frame_id = "body_FLU";
+  p->imu_raw_publisher.publish(imu_raw_FLU);
 }
 
 /*!
