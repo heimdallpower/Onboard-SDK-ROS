@@ -840,7 +840,7 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
   imu_raw_FLU.linear_acceleration.x =  acceleration_raw_FRD.x * p->gravity_const;
   imu_raw_FLU.linear_acceleration.y = -acceleration_raw_FRD.y * p->gravity_const;
   imu_raw_FLU.linear_acceleration.z = -acceleration_raw_FRD.z * p->gravity_const;
-  imu_raw_FLU.header.stamp = ros::Time::now();
+  imu_raw_FLU.header.stamp = msg_time;
   imu_raw_FLU.header.frame_id = "body_FLU";
   p->imu_raw_publisher.publish(imu_raw_FLU);
 }
