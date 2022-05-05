@@ -113,12 +113,16 @@ void DJISDKNode::flightControl(uint8_t flag, float xSP, float ySP, float zSP, fl
 
   Control::CtrlData ctrlData(flag, xCmd, yCmd, zCmd, yawCmd);
   vehicle->control->flightCtrl(ctrlData);
+
+  static int msg_counter{0};
+	ROS_INFO("[dji_sdk] Called flightCtrl %d at time: %lf", msg_counter, ros::Time::now().toSec());
+  ++msg_counter;
 }
 
 void
 DJISDKNode::flightControlSetpointCallback(
   const sensor_msgs::Joy::ConstPtr& pMsg)
-{ 
+{
   float xSP    = pMsg->axes[0];
   float ySP    = pMsg->axes[1];
   float zSP    = pMsg->axes[2];
@@ -180,3 +184,4 @@ DJISDKNode::flightControlRollPitchPzYawrateCallback(
 
   flightControl(flag, roll, pitch, pz, yawRate);
 }
+
