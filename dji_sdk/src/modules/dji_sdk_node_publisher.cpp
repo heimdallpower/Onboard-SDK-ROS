@@ -299,6 +299,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
     //! Velocity converted to m/s and ENU coordinates to conform to REP103.
     geometry_msgs::Vector3Stamped rtk_velocity;
+    rtk_velocity.header.frame_id = "world_ENU"
     rtk_velocity.header.stamp = msg_time;
     rtk_velocity.vector.x = (rtk_telemetry_velocity.x)/100;
     rtk_velocity.vector.y = (rtk_telemetry_velocity.y)/100;
