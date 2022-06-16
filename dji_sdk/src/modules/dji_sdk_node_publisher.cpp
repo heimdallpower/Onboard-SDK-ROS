@@ -297,12 +297,12 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
     p->current_rtk_longitude = rtk_telemetry_position.longitude;
     p->current_rtk_altitude = rtk_telemetry_position.HFSL;
 
-    //! Velocity converted to m/s to conform to REP103.
+    //! Velocity converted to m/s and ENU coordinates to conform to REP103.
     geometry_msgs::Vector3Stamped rtk_velocity;
     rtk_velocity.header.stamp = msg_time;
     rtk_velocity.vector.x = (rtk_telemetry_velocity.x)/100;
     rtk_velocity.vector.y = (rtk_telemetry_velocity.y)/100;
-    rtk_velocity.vector.z = (rtk_telemetry_velocity.z)/100;
+    rtk_velocity.vector.z = (-rtk_telemetry_velocity.z)/100;
     p->rtk_velocity_publisher.publish(rtk_velocity);
 
     std_msgs::Int16 raw_rtk_yaw;
