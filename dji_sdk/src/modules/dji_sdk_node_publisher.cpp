@@ -430,7 +430,6 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_CONTROL_LEVEL>();
 
   dji_sdk::GPSHealth gps_health;
-  gps_health.header.frame_id  = "/gps";
   gps_health.header.stamp     = msg_time;
   gps_health.health           = gps_ctrl_level;
   p->gps_health_publisher.publish(gps_health);
