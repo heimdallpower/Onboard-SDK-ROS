@@ -266,7 +266,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    * to be trusted
    */
   gps_health_publisher =
-    nh.advertise<std_msgs::UInt8>("dji_sdk/gps_health", 10);
+    nh.advertise<dji_sdk::GPSHealth>("dji_sdk/gps_health", 10);
 
   /*!
    * NavSatFix specs:

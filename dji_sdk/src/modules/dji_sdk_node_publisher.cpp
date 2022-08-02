@@ -11,6 +11,7 @@
 
 #include <dji_sdk/dji_sdk_node.h>
 #include <dji_sdk/dji_sdk_geometry.h>
+#include <dji_sdk/GPSHealth.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
 #include <dji_telemetry.hpp>
@@ -428,10 +429,13 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
 
   Telemetry::TypeMap<Telemetry::TOPIC_GPS_CONTROL_LEVEL>::type gps_ctrl_level=
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_CONTROL_LEVEL>();
-  std_msgs::UInt8 msg_gps_ctrl_level;
-  msg_gps_ctrl_level.data = gps_ctrl_level;
+
+  dji_sdk::GPSHealth gps_health;
+  gps_health.header.stamp     = msg_time;
+  gps_health.health           = gps_ctrl_level;
+  p->gps_health_publisher.publish(gps_health);
+
   p->current_gps_health = gps_ctrl_level;
-  p->gps_health_publisher.publish(msg_gps_ctrl_level);
 
   if(p->local_pos_ref_set)
   {

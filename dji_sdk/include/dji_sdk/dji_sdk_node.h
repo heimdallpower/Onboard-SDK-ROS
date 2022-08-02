@@ -44,6 +44,7 @@
 #include <dji_sdk/RTKYaw.h>
 #include <dji_sdk/RTKPosition.h>
 #include <dji_sdk/GPSPosition.h>
+#include <dji_sdk/GPSHealth.h>
 
 //! mission service
 // missionManager
