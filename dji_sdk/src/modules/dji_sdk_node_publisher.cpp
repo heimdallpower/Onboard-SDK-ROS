@@ -400,7 +400,10 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   {
     if(p->curr_align_state == ALIGNED)
     {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+      const ros::Time fc_time{p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms)};
+      const double diff{(fc_time - msg_time).toSec()};
+      ROS_INFO_STREAM_THROTTLE(0.5, "[dji_sdk] Time difference: " << diff << " [s]");
+      msg_time = fc_time;
     }
     else
     {
