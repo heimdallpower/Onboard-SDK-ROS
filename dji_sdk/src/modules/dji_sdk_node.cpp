@@ -257,6 +257,13 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    */
   imu_publisher = nh.advertise<sensor_msgs::Imu>("dji_sdk/imu", 10);
 
+  /**
+   * @brief Actual raw IMU data. Contains
+   * - angular rate in body FLU frame
+   * - specific force in body FLU frame
+   */
+  imu_raw_publisher = nh.advertise<sensor_msgs::Imu>("dji_sdk/imu_raw", 10);
+
   // Refer to dji_sdk.h for different enums for M100 and A3/N3
   flight_status_publisher =
     nh.advertise<std_msgs::UInt8>("dji_sdk/flight_status", 10);
