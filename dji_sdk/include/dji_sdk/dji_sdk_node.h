@@ -45,7 +45,6 @@
 #include <dji_sdk/RTKPosition.h>
 #include <dji_sdk/GPSPosition.h>
 #include <dji_sdk/GPSHealth.h>
-#include <dji_sdk/ESCDataCollection.h>
 #include <dji_sdk/GPSRaw.h>
 
 //! mission service

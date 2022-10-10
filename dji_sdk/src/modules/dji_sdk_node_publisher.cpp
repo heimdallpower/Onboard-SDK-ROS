@@ -12,7 +12,6 @@
 #include <dji_sdk/dji_sdk_node.h>
 #include <dji_sdk/dji_sdk_geometry.h>
 #include <dji_sdk/GPSHealth.h>
-#include <dji_sdk/ESCDataCollection.h>
 #include <dji_sdk/GPSRaw.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
