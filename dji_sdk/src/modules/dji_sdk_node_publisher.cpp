@@ -395,6 +395,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
    * SEE: dji_telemetry_doc.hpp for units of data on topic 'TOPIC_GPS_POSITION' & 'TOPIC_GPS_VELOCITY'
    * SEE: dji_telemetry.hpp for units & meaning of fields in 'GPSDetail' struct.
   */
+  gps_raw_msg.header.stamp      = msg_time;
   gps_raw_msg.lat               = 1e7 * gps_raw_position.x;
   gps_raw_msg.lon               = 1e7 * gps_raw_position.y;
   gps_raw_msg.alt               = 1e3 * gps_raw_position.z;
