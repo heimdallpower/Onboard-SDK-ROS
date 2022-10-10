@@ -442,28 +442,6 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     }
   }
 
-  // const Telemetry::TypeMap<Telemetry::TOPIC_ESC_DATA>::type esc_data{
-  //   vehicle->subscribe->getValue<Telemetry::TOPIC_ESC_DATA>()
-  // };
-  // dji_sdk::ESCDataCollection esc_data_msg;
-  // esc_data_msg.header.stamp = msg_time;
-  // esc_data_msg.escs.reserve(sizeof(esc_data.esc) / sizeof(esc_data.esc[0]));
-  // for (const DJI::OSDK::Telemetry::ESCStatusIndividual& esc_status : esc_data.esc)
-  // {
-  //   dji_sdk::ESCData esc;
-  //   esc.current_ampers  = static_cast<double>(esc_status.current) / 1000.0;
-  //   esc.voltage_volts   = static_cast<double>(esc_status.voltage) / 1000.0;
-  //   esc.temp_degc       = esc_status.temperature;
-  //   esc.speed_rpm       = esc_status.speed;
-  //   esc.stall           = esc_status.stall;
-  //   esc.no_load         = esc_status.empty;
-  //   esc.unbalanced      = esc_status.unbalanced;
-  //   esc.connected       = !esc_status.escDisconnected;
-  //   esc.temp_high       = esc_status.temperatureHigh;
-  //   esc_data_msg.escs.push_back(esc);
-  // }
-  // p->esc_publisher.publish(esc_data_msg);
-
   Telemetry::TypeMap<Telemetry::TOPIC_GPS_FUSED>::type fused_gps =
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_FUSED>();
   Telemetry::TypeMap<Telemetry::TOPIC_ALTITUDE_FUSIONED>::type fused_altitude =
