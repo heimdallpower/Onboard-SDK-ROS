@@ -400,14 +400,14 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
    * SEE: dji_telemetry.hpp for units & meaning of fields in 'GPSDetail' struct.
   */
   gps_raw_msg.header.stamp      = msg_time;
-  gps_raw_msg.lat               = 1e7 * gps_raw_position.x;
-  gps_raw_msg.lon               = 1e7 * gps_raw_position.y;
-  gps_raw_msg.alt               = 1e3 * gps_raw_position.z;
+  gps_raw_msg.lat               = 1e-7 * static_cast<double>(gps_raw_position.x);
+  gps_raw_msg.lon               = 1e-7 * static_cast<double>(gps_raw_position.y);
+  gps_raw_msg.alt               = 1e-3 * static_cast<double>(gps_raw_position.z);
   gps_raw_msg.var_pos_hor       = std::pow(1e-3 * gps_raw_details.hacc, 2.0);
   gps_raw_msg.var_pos_vert      = std::pow(1e-3 * gps_raw_details.gnssStatus, 2.0);
-  gps_raw_msg.velE              = 1e-2 * gps_raw_velocity.y;
-  gps_raw_msg.velN              = 1e-2 * gps_raw_velocity.x;
-  gps_raw_msg.velU              = 1e-2 * (-gps_raw_velocity.z);
+  gps_raw_msg.velE              = 1e-2 * static_cast<double>(gps_raw_velocity.y);
+  gps_raw_msg.velN              = 1e-2 * static_cast<double>(gps_raw_velocity.x);
+  gps_raw_msg.velU              = -1e-2 * static_cast<double>(gps_raw_velocity.z);
   gps_raw_msg.var_speed         = std::pow(1e-2 * gps_raw_details.sacc, 2.0);
   gps_raw_msg.hdop              = gps_raw_details.hdop;
   gps_raw_msg.pdop              = gps_raw_details.pdop;
