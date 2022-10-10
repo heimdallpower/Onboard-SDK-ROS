@@ -281,9 +281,6 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   gps_position_publisher =
     nh.advertise<sensor_msgs::NavSatFix>("dji_sdk/gps_position", 10);
 
-  esc_publisher =
-    nh.advertise<dji_sdk::ESCDataCollection>("dji_sdk/escs", 10);
-
   /*!
    *   x [m]. Positive along navigation frame x axis
    *   y [m]. Positive along navigation frame y axis
@@ -483,55 +480,40 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
 
   std::vector<Telemetry::TopicName> topicList50Hz;
   // 50 Hz package from FC
-  // topicList50Hz.push_back(Telemetry::TOPIC_GPS_FUSED);
-  // topicList50Hz.push_back(Telemetry::TOPIC_ALTITUDE_FUSIONED);
-  // topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
-  // topicList50Hz.push_back(Telemetry::TOPIC_STATUS_FLIGHT);
-  // topicList50Hz.push_back(Telemetry::TOPIC_STATUS_DISPLAYMODE);
-  // topicList50Hz.push_back(Telemetry::TOPIC_GIMBAL_ANGLES);
-  // topicList50Hz.push_back(Telemetry::TOPIC_GIMBAL_STATUS);
-  // topicList50Hz.push_back(Telemetry::TOPIC_RC);
-  // topicList50Hz.push_back(Telemetry::TOPIC_VELOCITY);
-  // topicList50Hz.push_back(Telemetry::TOPIC_GPS_CONTROL_LEVEL);
-  // 
-  // if(vehicle->getFwVersion() > versionBase33)
-  // {
-  //   ROS_WARN_STREAM("[dji_sdk] Subscribing to FW version > versionBase33 topics from FC.");
-  //   topicList50Hz.push_back(Telemetry::TOPIC_POSITION_VO);
-  //   topicList50Hz.push_back(Telemetry::TOPIC_RC_WITH_FLAG_DATA);
-  //   topicList50Hz.push_back(Telemetry::TOPIC_FLIGHT_ANOMALY);
+  topicList50Hz.push_back(Telemetry::TOPIC_GPS_FUSED);
+  topicList50Hz.push_back(Telemetry::TOPIC_ALTITUDE_FUSIONED);
+  topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
+  topicList50Hz.push_back(Telemetry::TOPIC_STATUS_FLIGHT);
+  topicList50Hz.push_back(Telemetry::TOPIC_STATUS_DISPLAYMODE);
+  topicList50Hz.push_back(Telemetry::TOPIC_GIMBAL_ANGLES);
+  topicList50Hz.push_back(Telemetry::TOPIC_GIMBAL_STATUS);
+  topicList50Hz.push_back(Telemetry::TOPIC_RC);
+  topicList50Hz.push_back(Telemetry::TOPIC_VELOCITY);
+  topicList50Hz.push_back(Telemetry::TOPIC_GPS_CONTROL_LEVEL);
 
-  //   // A3 and N3 has access to more buttons on RC
-  //   std::string hardwareVersion(vehicle->getHwVersion());
-  //   if( (hardwareVersion == std::string(Version::N3)) || hardwareVersion == std::string(Version::A3))
-  //   {
-  //     ROS_WARN_STREAM("[dji_sdk] Subscribing to FW version > versionBase33 & HW version = N3 | A3 topics from FC.");
-  //     topicList50Hz.push_back(Telemetry::TOPIC_RC_FULL_RAW_DATA);
-  //   }
-
-  //   // Advertise rc connection status only if this topic is supported by FW
-  //   rc_connection_status_publisher =
-  //           nh.advertise<std_msgs::UInt8>("dji_sdk/rc_connection_status", 10);
-
-  //   flight_anomaly_publisher =
-  //           nh.advertise<dji_sdk::FlightAnomaly>("dji_sdk/flight_anomaly", 10);
-  // }
-  topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
-
-  size_t package50HzSize{0};
-  for (DJI::OSDK::Telemetry::TopicName topic : topicList50Hz)
+  if(vehicle->getFwVersion() > versionBase33)
   {
-    ROS_WARN_STREAM("[dji_sdk] TopicList50Hz entry: {topic: "
-      << topic << ", size: " << static_cast<int>(DJI::OSDK::Telemetry::TopicDataBase[topic].size)
-    );
-    package50HzSize += DJI::OSDK::Telemetry::TopicDataBase[topic].size;
+    ROS_WARN_STREAM("[dji_sdk] Subscribing to FW version > versionBase33 topics from FC.");
+    topicList50Hz.push_back(Telemetry::TOPIC_POSITION_VO);
+    topicList50Hz.push_back(Telemetry::TOPIC_RC_WITH_FLAG_DATA);
+    topicList50Hz.push_back(Telemetry::TOPIC_FLIGHT_ANOMALY);
+
+    // A3 and N3 has access to more buttons on RC
+    std::string hardwareVersion(vehicle->getHwVersion());
+    if( (hardwareVersion == std::string(Version::N3)) || hardwareVersion == std::string(Version::A3))
+      topicList50Hz.push_back(Telemetry::TOPIC_RC_FULL_RAW_DATA);
+
+    // Advertise rc connection status only if this topic is supported by FW
+    rc_connection_status_publisher =
+            nh.advertise<std_msgs::UInt8>("dji_sdk/rc_connection_status", 10);
+
+    flight_anomaly_publisher =
+            nh.advertise<dji_sdk::FlightAnomaly>("dji_sdk/flight_anomaly", 10);
   }
-  ROS_WARN_STREAM("[dji_sdk] package50HzSize size " << static_cast<int>(package50HzSize));
 
   if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, static_cast<int>(topicList50Hz.size()),
                                                    topicList50Hz.data(), true, 50))
   {
-    ROS_WARN_STREAM("[dji_sdk] initPackageFromTopicList 50Hz success");
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_50HZ, WAIT_TIMEOUT);
     if (ACK::getError(ack))
     {
@@ -635,8 +617,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   std::vector<Telemetry::TopicName> topicList400Hz;
   topicList400Hz.push_back(Telemetry::TOPIC_HARD_SYNC);
 
-  int nTopic400Hz = topicList400Hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_400HZ, nTopic400Hz,
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_400HZ, static_cast<int>(topicList400Hz.size()),
                                                    topicList400Hz.data(), 1, 400))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_400HZ, WAIT_TIMEOUT);
