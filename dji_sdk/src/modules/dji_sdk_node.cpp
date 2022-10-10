@@ -493,7 +493,6 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
 
   if(vehicle->getFwVersion() > versionBase33)
   {
-    ROS_WARN_STREAM("[dji_sdk] Subscribing to FW version > versionBase33 topics from FC.");
     topicList50Hz.push_back(Telemetry::TOPIC_POSITION_VO);
     topicList50Hz.push_back(Telemetry::TOPIC_RC_WITH_FLAG_DATA);
     topicList50Hz.push_back(Telemetry::TOPIC_FLIGHT_ANOMALY);
