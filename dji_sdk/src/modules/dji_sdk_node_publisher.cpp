@@ -392,7 +392,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   };
   const Telemetry::TypeMap<Telemetry::TOPIC_GPS_DETAILS>::type gps_raw_details{
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DETAILS>()
-};
+  };
 
   dji_sdk::GPSRaw gps_raw_msg;
   /**
