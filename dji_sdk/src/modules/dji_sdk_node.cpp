@@ -481,7 +481,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
 
   std::vector<Telemetry::TopicName> topicList50Hz;
   // 50 Hz package from FC
-  topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
+  // topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
   topicList50Hz.push_back(Telemetry::TOPIC_GPS_FUSED);
   topicList50Hz.push_back(Telemetry::TOPIC_ALTITUDE_FUSIONED);
   topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
