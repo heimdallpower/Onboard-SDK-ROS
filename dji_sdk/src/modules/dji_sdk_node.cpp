@@ -278,6 +278,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   gps_position_publisher =
     nh.advertise<sensor_msgs::NavSatFix>("dji_sdk/gps_position", 10);
 
+  esc_publisher =
+    nh.advertise<dji_sdk::ESCDataCollection>("dji_sdk/escs", 10);
+
   /*!
    *   x [m]. Positive along navigation frame x axis
    *   y [m]. Positive along navigation frame y axis
@@ -478,6 +481,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
 
   std::vector<Telemetry::TopicName> topicList50Hz;
   // 50 Hz package from FC
+  topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
   topicList50Hz.push_back(Telemetry::TOPIC_GPS_FUSED);
   topicList50Hz.push_back(Telemetry::TOPIC_ALTITUDE_FUSIONED);
   topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
