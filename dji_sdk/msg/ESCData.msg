@@ -1,9 +1,0 @@
-float64 current_ampers
-float64 voltage_volts
-int16   temp_degc
-int16   speed_rpm
-bool    stall
-bool    no_load
-bool    unbalanced
-bool    connected
-bool    temp_high

@@ -84,8 +84,6 @@ add_message_files(
   RTKPosition.msg
   GPSPosition.msg
   GPSHealth.msg
-  ESCData.msg
-  ESCDataCollection.msg
   GPSRaw.msg
 )
 
