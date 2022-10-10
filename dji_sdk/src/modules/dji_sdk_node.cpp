@@ -518,6 +518,14 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   }
   topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
 
+  size_t package50HzSize{0};
+  for (DJI::OSDK::Telemetry::TopicName topic : topicList50Hz)
+  {
+    ROS_WARN_STREAM("[dji_sdk] TopicList50Hz entry " << topic);
+    package50HzSize += DJI::OSDK::Telemetry::TopicDataBase[topic].size;
+  }
+  ROS_WARN_STREAM("[dji_sdk] package50HzSize size " << static_cast<int>(package50HzSize));
+
   if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, static_cast<int>(topicList50Hz.size()),
                                                    topicList50Hz.data(), true, 50))
   {
