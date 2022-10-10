@@ -383,15 +383,20 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   }
 
-  DJI::OSDK::Telemetry::Vector3d gps_raw_position =
-      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_POSITION>();
-  DJI::OSDK::Telemetry::Vector3f gps_raw_velocity =
-      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_VELOCITY>();
-  DJI::OSDK::Telemetry::GPSDetail gps_raw_details =
-    vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DETAILS>();
+  
+  const Telemetry::TypeMap<Telemetry::TOPIC_GPS_POSITION>::type gps_raw_position{
+      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_POSITION>()
+  };
+  const Telemetry::TypeMap<Telemetry::TOPIC_GPS_VELOCITY>::type gps_raw_velocity{
+      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_VELOCITY>()
+  };
+  const Telemetry::TypeMap<Telemetry::TOPIC_GPS_DETAILS>::type gps_raw_details{
+    vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DETAILS>()
+};
 
   dji_sdk::GPSRaw gps_raw_msg;
   /**
+   * NOTE: Untested conversions
    * SEE: dji_telemetry_doc.hpp for units of data on topic 'TOPIC_GPS_POSITION' & 'TOPIC_GPS_VELOCITY'
    * SEE: dji_telemetry.hpp for units & meaning of fields in 'GPSDetail' struct.
   */
