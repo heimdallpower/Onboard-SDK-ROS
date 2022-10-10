@@ -267,6 +267,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    */
   gps_health_publisher =
     nh.advertise<dji_sdk::GPSHealth>("dji_sdk/gps_health", 10);
+  
+  gps_raw_publisher = 
+    nh.advertise<dji_sdk::GPSRaw>("dji_sdk/gps_raw", 10);
 
   /*!
    * NavSatFix specs:
@@ -461,8 +464,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   topicList100Hz.push_back(Telemetry::TOPIC_ACCELERATION_GROUND);
   topicList100Hz.push_back(Telemetry::TOPIC_ANGULAR_RATE_FUSIONED);
 
-  int nTopic100Hz    = topicList100Hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_100HZ, nTopic100Hz,
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_100HZ, static_cast<int>(topicList100Hz.size()),
                                                    topicList100Hz.data(), 1, 100))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_100HZ, WAIT_TIMEOUT);
@@ -481,7 +483,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
 
   std::vector<Telemetry::TopicName> topicList50Hz;
   // 50 Hz package from FC
-  topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
+  // topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
   topicList50Hz.push_back(Telemetry::TOPIC_GPS_FUSED);
   topicList50Hz.push_back(Telemetry::TOPIC_ALTITUDE_FUSIONED);
   topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
@@ -599,8 +601,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
     }
   }
 
-  int nTopic5hz    = topicList5hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_5HZ, nTopic5hz,
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_5HZ, static_cast<int>(topicList5hz.size()),
                                                    topicList5hz.data(), 1, 5))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_5HZ, WAIT_TIMEOUT);

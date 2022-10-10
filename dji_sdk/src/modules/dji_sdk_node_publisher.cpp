@@ -13,6 +13,7 @@
 #include <dji_sdk/dji_sdk_geometry.h>
 #include <dji_sdk/GPSHealth.h>
 #include <dji_sdk/ESCDataCollection.h>
+#include <dji_sdk/GPSRaw.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
 #include <dji_telemetry.hpp>
@@ -379,9 +380,35 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
         p->bias_gps_altitude = fused_altitude - p->current_rtk_altitude;
       }
     }
+
   }
 
-  return;
+  DJI::OSDK::Telemetry::Vector3d gps_raw_position =
+      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_POSITION>();
+  DJI::OSDK::Telemetry::Vector3f gps_raw_velocity =
+      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_VELOCITY>();
+  DJI::OSDK::Telemetry::GPSDetail gps_raw_details =
+    vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DETAILS>();
+
+  dji_sdk::GPSRaw gps_raw_msg;
+  /**
+   * SEE: dji_telemetry_doc.hpp for units of data on topic 'TOPIC_GPS_POSITION' & 'TOPIC_GPS_VELOCITY'
+   * SEE: dji_telemetry.hpp for units & meaning of fields in 'GPSDetail' struct.
+  */
+  gps_raw_msg.lat               = 1e7 * gps_raw_position.x;
+  gps_raw_msg.lon               = 1e7 * gps_raw_position.y;
+  gps_raw_msg.alt               = 1e3 * gps_raw_position.z;
+  gps_raw_msg.var_pos_hor       = std::pow(1e-3 * gps_raw_details.hacc, 2.0);
+  gps_raw_msg.var_pos_vert      = std::pow(1e-3 * gps_raw_details.gnssStatus, 2.0);
+  gps_raw_msg.velE              = 1e-2 * gps_raw_velocity.y;
+  gps_raw_msg.velN              = 1e-2 * gps_raw_velocity.x;
+  gps_raw_msg.velU              = 1e-2 * (-gps_raw_velocity.z);
+  gps_raw_msg.var_speed         = std::pow(1e-2 * gps_raw_details.sacc, 2.0);
+  gps_raw_msg.hdop              = gps_raw_details.hdop;
+  gps_raw_msg.pdop              = gps_raw_details.pdop;
+  gps_raw_msg.fix               = gps_raw_details.fix;
+  gps_raw_msg.num_visible_sats  = gps_raw_details.NSV;
+  p->gps_raw_publisher.publish(gps_raw_msg);
 }
 
 void

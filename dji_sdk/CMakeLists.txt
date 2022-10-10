@@ -86,6 +86,7 @@ add_message_files(
   GPSHealth.msg
   ESCData.msg
   ESCDataCollection.msg
+  GPSRaw.msg
 )
 
 ## Generate services in the 'srv' folder
