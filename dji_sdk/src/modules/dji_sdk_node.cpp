@@ -481,7 +481,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
 
   std::vector<Telemetry::TopicName> topicList50Hz;
   // 50 Hz package from FC
-  // topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
+  topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
   topicList50Hz.push_back(Telemetry::TOPIC_GPS_FUSED);
   topicList50Hz.push_back(Telemetry::TOPIC_ALTITUDE_FUSIONED);
   topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
@@ -514,15 +514,14 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
             nh.advertise<dji_sdk::FlightAnomaly>("dji_sdk/flight_anomaly", 10);
   }
 
-  int nTopic50Hz    = topicList50Hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, nTopic50Hz,
-                                                   topicList50Hz.data(), 1, 50))
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, static_cast<int>(topicList50Hz.size()),
+                                                   topicList50Hz.data(), true, 50))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_50HZ, WAIT_TIMEOUT);
     if (ACK::getError(ack))
     {
       vehicle->subscribe->removePackage(PACKAGE_ID_50HZ, WAIT_TIMEOUT);
-      ROS_ERROR("Failed to start 50Hz package");
+      ROS_ERROR_STREAM("Failed to start 50Hz package with ack.data = " << static_cast<int>(ack.data));
       return false;
     }
     else
