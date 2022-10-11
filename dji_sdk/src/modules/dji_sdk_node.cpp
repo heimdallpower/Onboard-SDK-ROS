@@ -461,7 +461,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   topicList100Hz.push_back(Telemetry::TOPIC_ACCELERATION_GROUND);
   topicList100Hz.push_back(Telemetry::TOPIC_ANGULAR_RATE_FUSIONED);
 
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_100HZ, static_cast<int>(topicList100Hz.size()),
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_100HZ, topicList100Hz.size(),
                                                    topicList100Hz.data(), 1, 100))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_100HZ, WAIT_TIMEOUT);
@@ -510,14 +510,14 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
             nh.advertise<dji_sdk::FlightAnomaly>("dji_sdk/flight_anomaly", 10);
   }
 
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, static_cast<int>(topicList50Hz.size()),
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, topicList50Hz.size(),
                                                    topicList50Hz.data(), true, 50))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_50HZ, WAIT_TIMEOUT);
     if (ACK::getError(ack))
     {
       vehicle->subscribe->removePackage(PACKAGE_ID_50HZ, WAIT_TIMEOUT);
-      ROS_ERROR_STREAM("Failed to start 50Hz package with ack.data = " << static_cast<int>(ack.data));
+      ROS_ERROR_STREAM("Failed to start 50Hz package with ack.data = " << ack.data);
       return false;
     }
     else
@@ -595,7 +595,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
     }
   }
 
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_5HZ, static_cast<int>(topicList5hz.size()),
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_5HZ, topicList5hz.size(),
                                                    topicList5hz.data(), 1, 5))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_5HZ, WAIT_TIMEOUT);
@@ -616,7 +616,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   std::vector<Telemetry::TopicName> topicList400Hz;
   topicList400Hz.push_back(Telemetry::TOPIC_HARD_SYNC);
 
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_400HZ, static_cast<int>(topicList400Hz.size()),
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_400HZ, topicList400Hz.size(),
                                                    topicList400Hz.data(), 1, 400))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_400HZ, WAIT_TIMEOUT);
