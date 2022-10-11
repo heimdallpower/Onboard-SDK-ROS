@@ -10,8 +10,8 @@ float64 velN            # North velocity    [m/s]
 float64 velU            # Up velocity       [m/s]
 float64 var_speed       # variance estimate of speed [(m/s)^2]
 
-float64 hdop            # Horizontal dilution of precision            
-float64 pdop            # Position dilution of precision
+float64 hdop            # Horizontal dilution of precision  [m]
+float64 pdop            # Position dilution of precision    [m]
 
 float64 fix
 
