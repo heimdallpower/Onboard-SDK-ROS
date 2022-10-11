@@ -12,6 +12,7 @@
 #include <dji_sdk/dji_sdk_node.h>
 #include <dji_sdk/dji_sdk_geometry.h>
 #include <dji_sdk/GPSHealth.h>
+#include <dji_sdk/GPSRaw.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
 #include <dji_telemetry.hpp>
@@ -378,9 +379,41 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
         p->bias_gps_altitude = fused_altitude - p->current_rtk_altitude;
       }
     }
+
   }
 
-  return;
+  
+  const Telemetry::TypeMap<Telemetry::TOPIC_GPS_POSITION>::type gps_raw_position{
+      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_POSITION>()
+  };
+  const Telemetry::TypeMap<Telemetry::TOPIC_GPS_VELOCITY>::type gps_raw_velocity{
+      vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_VELOCITY>()
+  };
+  const Telemetry::TypeMap<Telemetry::TOPIC_GPS_DETAILS>::type gps_raw_details{
+    vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DETAILS>()
+  };
+
+  dji_sdk::GPSRaw gps_raw_msg;
+  /**
+   * NOTE: Untested conversions
+   * SEE: dji_telemetry_doc.hpp for units of data on topic 'TOPIC_GPS_POSITION' & 'TOPIC_GPS_VELOCITY'
+   * SEE: dji_telemetry.hpp for units & meaning of fields in 'GPSDetail' struct.
+  */
+  gps_raw_msg.header.stamp      = msg_time;
+  gps_raw_msg.lat               = 1e-7 * static_cast<double>(gps_raw_position.x);
+  gps_raw_msg.lon               = 1e-7 * static_cast<double>(gps_raw_position.y);
+  gps_raw_msg.alt               = 1e-3 * static_cast<double>(gps_raw_position.z);
+  gps_raw_msg.var_pos_hor       = std::pow(1e-3 * gps_raw_details.hacc, 2.0);
+  gps_raw_msg.var_pos_vert      = std::pow(1e-3 * gps_raw_details.gnssStatus, 2.0);
+  gps_raw_msg.velE              = 1e-2 * static_cast<double>(gps_raw_velocity.y);
+  gps_raw_msg.velN              = 1e-2 * static_cast<double>(gps_raw_velocity.x);
+  gps_raw_msg.velU              = -1e-2 * static_cast<double>(gps_raw_velocity.z);
+  gps_raw_msg.var_speed         = std::pow(1e-2 * gps_raw_details.sacc, 2.0);
+  gps_raw_msg.hdop              = gps_raw_details.hdop;
+  gps_raw_msg.pdop              = gps_raw_details.pdop;
+  gps_raw_msg.fix               = gps_raw_details.fix;
+  gps_raw_msg.num_visible_sats  = gps_raw_details.NSV;
+  p->gps_raw_publisher.publish(gps_raw_msg);
 }
 
 void
@@ -414,7 +447,6 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     vehicle->subscribe->getValue<Telemetry::TOPIC_ALTITUDE_FUSIONED>();
   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
           vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
-
 
   sensor_msgs::NavSatFix gps_pos;
   gps_pos.header.frame_id = "/gps";

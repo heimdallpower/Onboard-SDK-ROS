@@ -267,6 +267,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    */
   gps_health_publisher =
     nh.advertise<dji_sdk::GPSHealth>("dji_sdk/gps_health", 10);
+  
+  gps_raw_publisher = 
+    nh.advertise<dji_sdk::GPSRaw>("dji_sdk/gps_raw", 10);
 
   /*!
    * NavSatFix specs:
@@ -458,8 +461,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   topicList100Hz.push_back(Telemetry::TOPIC_ACCELERATION_GROUND);
   topicList100Hz.push_back(Telemetry::TOPIC_ANGULAR_RATE_FUSIONED);
 
-  int nTopic100Hz    = topicList100Hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_100HZ, nTopic100Hz,
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_100HZ, topicList100Hz.size(),
                                                    topicList100Hz.data(), 1, 100))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_100HZ, WAIT_TIMEOUT);
@@ -498,9 +500,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
     // A3 and N3 has access to more buttons on RC
     std::string hardwareVersion(vehicle->getHwVersion());
     if( (hardwareVersion == std::string(Version::N3)) || hardwareVersion == std::string(Version::A3))
-    {
       topicList50Hz.push_back(Telemetry::TOPIC_RC_FULL_RAW_DATA);
-    }
 
     // Advertise rc connection status only if this topic is supported by FW
     rc_connection_status_publisher =
@@ -510,15 +510,14 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
             nh.advertise<dji_sdk::FlightAnomaly>("dji_sdk/flight_anomaly", 10);
   }
 
-  int nTopic50Hz    = topicList50Hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, nTopic50Hz,
-                                                   topicList50Hz.data(), 1, 50))
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_50HZ, topicList50Hz.size(),
+                                                   topicList50Hz.data(), true, 50))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_50HZ, WAIT_TIMEOUT);
     if (ACK::getError(ack))
     {
       vehicle->subscribe->removePackage(PACKAGE_ID_50HZ, WAIT_TIMEOUT);
-      ROS_ERROR("Failed to start 50Hz package");
+      ROS_ERROR_STREAM("Failed to start 50Hz package with ack.data = " << ack.data);
       return false;
     }
     else
@@ -596,8 +595,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
     }
   }
 
-  int nTopic5hz    = topicList5hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_5HZ, nTopic5hz,
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_5HZ, topicList5hz.size(),
                                                    topicList5hz.data(), 1, 5))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_5HZ, WAIT_TIMEOUT);
@@ -618,8 +616,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   std::vector<Telemetry::TopicName> topicList400Hz;
   topicList400Hz.push_back(Telemetry::TOPIC_HARD_SYNC);
 
-  int nTopic400Hz = topicList400Hz.size();
-  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_400HZ, nTopic400Hz,
+  if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_400HZ, topicList400Hz.size(),
                                                    topicList400Hz.data(), 1, 400))
   {
     ack = vehicle->subscribe->startPackage(PACKAGE_ID_400HZ, WAIT_TIMEOUT);

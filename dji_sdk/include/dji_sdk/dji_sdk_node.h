@@ -45,6 +45,7 @@
 #include <dji_sdk/RTKPosition.h>
 #include <dji_sdk/GPSPosition.h>
 #include <dji_sdk/GPSHealth.h>
+#include <dji_sdk/GPSRaw.h>
 
 //! mission service
 // missionManager
@@ -367,6 +368,7 @@ private:
   ros::Publisher imu_publisher;
   ros::Publisher flight_status_publisher;
   ros::Publisher gps_health_publisher;
+  ros::Publisher gps_raw_publisher;
   ros::Publisher gps_position_publisher;
   ros::Publisher vo_position_publisher;
   ros::Publisher height_publisher;
