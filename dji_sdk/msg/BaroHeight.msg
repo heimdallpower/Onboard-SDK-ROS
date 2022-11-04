@@ -1,0 +1,2 @@
+std_msgs/Header header
+float32 height_above_sea_level_m
