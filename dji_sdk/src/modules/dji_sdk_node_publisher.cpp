@@ -13,6 +13,7 @@
 #include <dji_sdk/dji_sdk_geometry.h>
 #include <dji_sdk/GPSHealth.h>
 #include <dji_sdk/GPSRaw.h>
+#include <dji_sdk/BaroHeight.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
 #include <dji_telemetry.hpp>
@@ -800,6 +801,12 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   acceleration.vector.y        = a_FC.x;
   acceleration.vector.z        = a_FC.z;  //z sign is already U
   p->acceleration_publisher.publish(acceleration);
+
+  dji_sdk::BaroHeight baro_height;
+  baro_height.header.frame_id           = "baro";
+  baro_height.header.stamp              = msg_time;
+  baro_height.height_above_sea_level_m  = vehicle->subscribe->getValue<Telemetry::TOPIC_ALTITUDE_BAROMETER>();
+  p->baro_height_publisher.publish(baro_height);
 }
 
 void

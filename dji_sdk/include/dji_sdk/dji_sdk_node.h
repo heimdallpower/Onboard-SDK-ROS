@@ -46,6 +46,7 @@
 #include <dji_sdk/GPSPosition.h>
 #include <dji_sdk/GPSHealth.h>
 #include <dji_sdk/GPSRaw.h>
+#include <dji_sdk/BaroHeight.h>
 
 //! mission service
 // missionManager
@@ -363,6 +364,7 @@ private:
   ros::Publisher attitude_publisher;
   ros::Publisher angularRate_publisher;
   ros::Publisher acceleration_publisher;
+  ros::Publisher baro_height_publisher;
   ros::Publisher battery_state_publisher;
   ros::Publisher trigger_publisher;
   ros::Publisher imu_publisher;

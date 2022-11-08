@@ -423,6 +423,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
     acceleration_publisher =
       nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/acceleration_ground_fused", 10);
 
+    baro_height_publisher = 
+      nh.advertise<dji_sdk::BaroHeight>("dji_sdk/barometer_height", 10);
+
     trigger_publisher = nh.advertise<sensor_msgs::TimeReference>("dji_sdk/trigger_time", 10);
 
     if (!initDataSubscribeFromFC(nh))
@@ -460,6 +463,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   topicList100Hz.push_back(Telemetry::TOPIC_QUATERNION);
   topicList100Hz.push_back(Telemetry::TOPIC_ACCELERATION_GROUND);
   topicList100Hz.push_back(Telemetry::TOPIC_ANGULAR_RATE_FUSIONED);
+  topicList100Hz.push_back(Telemetry::TOPIC_ALTITUDE_BAROMETER);
 
   if (vehicle->subscribe->initPackageFromTopicList(PACKAGE_ID_100HZ, topicList100Hz.size(),
                                                    topicList100Hz.data(), 1, 100))
