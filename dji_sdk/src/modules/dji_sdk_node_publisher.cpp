@@ -195,26 +195,6 @@ DJISDKNode::dataBroadcastCallback()
     flight_status.data = fs;
     flight_status_publisher.publish(flight_status);
   }
-
-  uint16_t flag_has_gimbal =
-          isM100() ? (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_GIMBAL) :
-          (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::A3_HAS_GIMBAL);
-  if (flag_has_gimbal)
-  {
-    Telemetry::Gimbal gimbal_reading;
-
-
-    Telemetry::Gimbal gimbal_angle = vehicle->broadcast->getGimbal();
-
-    geometry_msgs::Vector3Stamped gimbal_angle_vec3;
-
-    gimbal_angle_vec3.header.stamp = now_time;
-    gimbal_angle_vec3.header.frame_id = "world_ENU";
-    gimbal_angle_vec3.vector.x     = gimbal_angle.roll;
-    gimbal_angle_vec3.vector.y     = gimbal_angle.pitch;
-    gimbal_angle_vec3.vector.z     = gimbal_angle.yaw;
-    gimbal_angle_publisher.publish(gimbal_angle_vec3);
-  }
 }
 
 void
@@ -582,17 +562,6 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   v.vector.y = v_FC.data.x;
   v.vector.z = v_FC.data.z; //z sign is already U
   p->velocity_publisher.publish(v);
-
-  Telemetry::TypeMap<Telemetry::TOPIC_GIMBAL_ANGLES>::type gimbal_angle =
-    vehicle->subscribe->getValue<Telemetry::TOPIC_GIMBAL_ANGLES>();
-
-  geometry_msgs::Vector3Stamped gimbal_angle_vec3;
-
-  gimbal_angle_vec3.header.stamp = ros::Time::now();
-  gimbal_angle_vec3.vector.x     = gimbal_angle.x;
-  gimbal_angle_vec3.vector.y     = gimbal_angle.y;
-  gimbal_angle_vec3.vector.z     = gimbal_angle.z;
-  p->gimbal_angle_publisher.publish(gimbal_angle_vec3);
 
   // See dji_sdk.h for details about display_mode
 

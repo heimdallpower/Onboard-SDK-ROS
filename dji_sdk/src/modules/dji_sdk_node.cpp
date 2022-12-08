@@ -306,8 +306,6 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
     nh.advertise<dji_sdk::PayloadData>("dji_sdk/from_payload_data", 10);
 
   // TODO: documentation and proper frame id
-  gimbal_angle_publisher =
-    nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/gimbal_angle", 10);
 
   local_position_publisher =
       nh.advertise<geometry_msgs::PointStamped>("dji_sdk/local_position", 10);
@@ -489,8 +487,6 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
   topicList50Hz.push_back(Telemetry::TOPIC_STATUS_FLIGHT);
   topicList50Hz.push_back(Telemetry::TOPIC_STATUS_DISPLAYMODE);
-  topicList50Hz.push_back(Telemetry::TOPIC_GIMBAL_ANGLES);
-  topicList50Hz.push_back(Telemetry::TOPIC_GIMBAL_STATUS);
   topicList50Hz.push_back(Telemetry::TOPIC_RC);
   topicList50Hz.push_back(Telemetry::TOPIC_VELOCITY);
   topicList50Hz.push_back(Telemetry::TOPIC_GPS_CONTROL_LEVEL);
