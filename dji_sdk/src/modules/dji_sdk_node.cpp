@@ -305,8 +305,6 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   from_payload_data_publisher =
     nh.advertise<dji_sdk::PayloadData>("dji_sdk/from_payload_data", 10);
 
-  // TODO: documentation and proper frame id
-
   local_position_publisher =
       nh.advertise<geometry_msgs::PointStamped>("dji_sdk/local_position", 10);
 
