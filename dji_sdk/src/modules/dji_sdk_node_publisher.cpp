@@ -80,32 +80,32 @@ DJISDKNode::dataBroadcastCallback()
     attitude_publisher.publish(q);
   }
 
-  if ( (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_Q) &&
-       (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_W) &&
-       (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_A))
-  {
-    sensor_msgs::Imu imu;
+  // if ( (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_Q) &&
+  //      (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_W) &&
+  //      (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_A))
+  // {
+  //   sensor_msgs::Imu imu;
 
-    imu.header.frame_id = "body_FLU";
-    imu.header.stamp    = now_time;
+  //   imu.header.frame_id = "body_FLU";
+  //   imu.header.stamp    = now_time;
 
-    imu.linear_acceleration.x =  vehicle->broadcast->getAcceleration().x * gravity_const;
-    imu.linear_acceleration.y = -vehicle->broadcast->getAcceleration().y * gravity_const;
-    imu.linear_acceleration.z = -vehicle->broadcast->getAcceleration().z * gravity_const;
+  //   imu.linear_acceleration.x =  vehicle->broadcast->getAcceleration().x * gravity_const;
+  //   imu.linear_acceleration.y = -vehicle->broadcast->getAcceleration().y * gravity_const;
+  //   imu.linear_acceleration.z = -vehicle->broadcast->getAcceleration().z * gravity_const;
 
-    imu.angular_velocity.x    =  vehicle->broadcast->getAngularRate().x;
-    imu.angular_velocity.y    = -vehicle->broadcast->getAngularRate().y;
-    imu.angular_velocity.z    = -vehicle->broadcast->getAngularRate().z;
+  //   imu.angular_velocity.x    =  vehicle->broadcast->getAngularRate().x;
+  //   imu.angular_velocity.y    = -vehicle->broadcast->getAngularRate().y;
+  //   imu.angular_velocity.z    = -vehicle->broadcast->getAngularRate().z;
 
-    // Since the orientation is duplicated from attitude
-    // at this point, q_FLU2ENU has already been updated
-    imu.orientation.w = q_FLU2ENU.getW();
-    imu.orientation.x = q_FLU2ENU.getX();
-    imu.orientation.y = q_FLU2ENU.getY();
-    imu.orientation.z = q_FLU2ENU.getZ();
+  //   // Since the orientation is duplicated from attitude
+  //   // at this point, q_FLU2ENU has already been updated
+  //   imu.orientation.w = q_FLU2ENU.getW();
+  //   imu.orientation.x = q_FLU2ENU.getX();
+  //   imu.orientation.y = q_FLU2ENU.getY();
+  //   imu.orientation.z = q_FLU2ENU.getZ();
 
-    imu_publisher.publish(imu);
-  }
+  //   imu_publisher.publish(imu);
+  // }
 
   if (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_POS)
   {
@@ -825,62 +825,62 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
     vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
 
   ros::Time now_time = ros::Time::now();
-  ros::Time msg_time = now_time;
+  // ros::Time msg_time = now_time;
 
-  if(p->align_time_with_FC)
+  if(p->align_time_with_FC && p->curr_align_state != ALIGNED)
   {
     p->alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
+    // if(p->curr_align_state == ALIGNED)
+    // {
+    //   msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+    // }
+    // else
+    // {
+    //   return;
+    // }
   }
 
-  sensor_msgs::Imu synced_imu;
+  // sensor_msgs::Imu synced_imu;
 
-  synced_imu.header.frame_id = "body_FLU";
-  synced_imu.header.stamp    = msg_time;
+  // synced_imu.header.frame_id = "body_FLU";
+  // synced_imu.header.stamp    = msg_time;
 
-  //y, z signs are flipped from RD to LU for rate and accel
-  synced_imu.angular_velocity.x    =   hardSync_FC.w.x;
-  synced_imu.angular_velocity.y    =  -hardSync_FC.w.y;
-  synced_imu.angular_velocity.z    =  -hardSync_FC.w.z;
+  // //y, z signs are flipped from RD to LU for rate and accel
+  // synced_imu.angular_velocity.x    =   hardSync_FC.w.x;
+  // synced_imu.angular_velocity.y    =  -hardSync_FC.w.y;
+  // synced_imu.angular_velocity.z    =  -hardSync_FC.w.z;
 
-  synced_imu.linear_acceleration.x =   hardSync_FC.a.x * p->gravity_const;
-  synced_imu.linear_acceleration.y =  -hardSync_FC.a.y * p->gravity_const;
-  synced_imu.linear_acceleration.z =  -hardSync_FC.a.z * p->gravity_const;
+  // synced_imu.linear_acceleration.x =   hardSync_FC.a.x * p->gravity_const;
+  // synced_imu.linear_acceleration.y =  -hardSync_FC.a.y * p->gravity_const;
+  // synced_imu.linear_acceleration.z =  -hardSync_FC.a.z * p->gravity_const;
 
-  /*!
-   * The quaternion is the rotation from body_FLU to world_ENU.
-   * Refer to:
-   *   https://github.com/mavlink/mavros/blob/master/mavros/src/plugins/imu_pub.cpp
-   */
-  tf::Matrix3x3 R_FRD2NED(tf::Quaternion(hardSync_FC.q.q1, hardSync_FC.q.q2,
-                                         hardSync_FC.q.q3, hardSync_FC.q.q0));
-  tf::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
-  tf::Quaternion q_FLU2ENU;
-  R_FLU2ENU.getRotation(q_FLU2ENU);
+  // /*!
+  //  * The quaternion is the rotation from body_FLU to world_ENU.
+  //  * Refer to:
+  //  *   https://github.com/mavlink/mavros/blob/master/mavros/src/plugins/imu_pub.cpp
+  //  */
+  // tf::Matrix3x3 R_FRD2NED(tf::Quaternion(hardSync_FC.q.q1, hardSync_FC.q.q2,
+  //                                        hardSync_FC.q.q3, hardSync_FC.q.q0));
+  // tf::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
+  // tf::Quaternion q_FLU2ENU;
+  // R_FLU2ENU.getRotation(q_FLU2ENU);
 
-  synced_imu.orientation.w = q_FLU2ENU.getW();
-  synced_imu.orientation.x = q_FLU2ENU.getX();
-  synced_imu.orientation.y = q_FLU2ENU.getY();
-  synced_imu.orientation.z = q_FLU2ENU.getZ();
+  // synced_imu.orientation.w = q_FLU2ENU.getW();
+  // synced_imu.orientation.x = q_FLU2ENU.getX();
+  // synced_imu.orientation.y = q_FLU2ENU.getY();
+  // synced_imu.orientation.z = q_FLU2ENU.getZ();
 
-  p->imu_publisher.publish(synced_imu);
+  // p->imu_publisher.publish(synced_imu);
 
-  if (hardSync_FC.ts.flag == 1)
-  {
-    sensor_msgs::TimeReference trigTime;
-    trigTime.header.stamp = msg_time;
-    trigTime.time_ref     = now_time;
-    trigTime.source       = "FC";
+  // if (hardSync_FC.ts.flag == 1)
+  // {
+  //   sensor_msgs::TimeReference trigTime;
+  //   trigTime.header.stamp = msg_time;
+  //   trigTime.time_ref     = now_time;
+  //   trigTime.source       = "FC";
 
-    p->trigger_publisher.publish(trigTime);
-  }
+  //   p->trigger_publisher.publish(trigTime);
+  // }
 }
 
 /*!

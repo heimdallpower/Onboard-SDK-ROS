@@ -249,13 +249,13 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   battery_state_publisher =
     nh.advertise<sensor_msgs::BatteryState>("dji_sdk/battery_state",10);
 
-  /*!
-   * - Fused attitude (duplicated from attitude topic)
-   * - Raw linear acceleration (body frame: FLU, m/s^2)
-   *       Z value is +9.8 when placed on level ground statically
-   * - Raw angular velocity (body frame: FLU, rad/s^2)
-   */
-  imu_publisher = nh.advertise<sensor_msgs::Imu>("dji_sdk/imu", 10);
+  // /*!
+  //  * - Fused attitude (duplicated from attitude topic)
+  //  * - Raw linear acceleration (body frame: FLU, m/s^2)
+  //  *       Z value is +9.8 when placed on level ground statically
+  //  * - Raw angular velocity (body frame: FLU, rad/s^2)
+  //  */
+  // imu_publisher = nh.advertise<sensor_msgs::Imu>("dji_sdk/imu", 10);
 
   // Refer to dji_sdk.h for different enums for M100 and A3/N3
   flight_status_publisher =
@@ -426,7 +426,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
     baro_height_publisher = 
       nh.advertise<dji_sdk::BaroHeight>("dji_sdk/barometer_height", 10);
 
-    trigger_publisher = nh.advertise<sensor_msgs::TimeReference>("dji_sdk/trigger_time", 10);
+    // trigger_publisher = nh.advertise<sensor_msgs::TimeReference>("dji_sdk/trigger_time", 10);
 
     if (!initDataSubscribeFromFC(nh))
     {

@@ -366,8 +366,8 @@ private:
   ros::Publisher acceleration_publisher;
   ros::Publisher baro_height_publisher;
   ros::Publisher battery_state_publisher;
-  ros::Publisher trigger_publisher;
-  ros::Publisher imu_publisher;
+  // ros::Publisher trigger_publisher;
+  // ros::Publisher imu_publisher;
   ros::Publisher flight_status_publisher;
   ros::Publisher gps_health_publisher;
   ros::Publisher gps_raw_publisher;
