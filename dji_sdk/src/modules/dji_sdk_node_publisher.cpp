@@ -383,7 +383,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   }
 
-  
+
   const Telemetry::TypeMap<Telemetry::TOPIC_GPS_POSITION>::type gps_raw_position{
       vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_POSITION>()
   };
@@ -562,7 +562,8 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   Telemetry::TypeMap<Telemetry::TOPIC_STATUS_FLIGHT>::type fs =
     vehicle->subscribe->getValue<Telemetry::TOPIC_STATUS_FLIGHT>();
 
-  std_msgs::UInt8 flight_status;
+  dji_sdk::UInt8Stamped flight_status;
+  flight_status.header.stamp = msg_time;
   flight_status.data = fs;
   p->flight_status_publisher.publish(flight_status);
 
@@ -599,7 +600,8 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   Telemetry::TypeMap<Telemetry::TOPIC_STATUS_DISPLAYMODE>::type dm =
     vehicle->subscribe->getValue<Telemetry::TOPIC_STATUS_DISPLAYMODE>();
 
-  std_msgs::UInt8 status_dm;
+  dji_sdk::UInt8Stamped status_dm;
+  status_dm.header.stamp = msg_time;
   status_dm.data = dm;
   p->displaymode_publisher.publish(status_dm);
 

@@ -47,6 +47,7 @@
 #include <dji_sdk/GPSHealth.h>
 #include <dji_sdk/GPSRaw.h>
 #include <dji_sdk/BaroHeight.h>
+#include <dji_sdk/UInt8Stamped.h>
 
 //! mission service
 // missionManager

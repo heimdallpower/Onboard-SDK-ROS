@@ -259,7 +259,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
   // Refer to dji_sdk.h for different enums for M100 and A3/N3
   flight_status_publisher =
-    nh.advertise<std_msgs::UInt8>("dji_sdk/flight_status", 10);
+    nh.advertise<dji_sdk::UInt8Stamped>("dji_sdk/flight_status", 10);
 
   /*!
    * gps_health needs to be greater than 3 for gps_position and velocity topics
@@ -267,8 +267,8 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
    */
   gps_health_publisher =
     nh.advertise<dji_sdk::GPSHealth>("dji_sdk/gps_health", 10);
-  
-  gps_raw_publisher = 
+
+  gps_raw_publisher =
     nh.advertise<dji_sdk::GPSRaw>("dji_sdk/gps_raw", 10);
 
   /*!
@@ -415,7 +415,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
     // Details can be found in DisplayMode enum in dji_sdk.h
     displaymode_publisher =
-      nh.advertise<std_msgs::UInt8>("dji_sdk/display_mode", 10);
+      nh.advertise<dji_sdk::UInt8Stamped>("dji_sdk/display_mode", 10);
 
     angularRate_publisher =
       nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/angular_velocity_fused", 10);
@@ -423,7 +423,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
     acceleration_publisher =
       nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/acceleration_ground_fused", 10);
 
-    baro_height_publisher = 
+    baro_height_publisher =
       nh.advertise<dji_sdk::BaroHeight>("dji_sdk/barometer_height", 10);
 
     trigger_publisher = nh.advertise<sensor_msgs::TimeReference>("dji_sdk/trigger_time", 10);
