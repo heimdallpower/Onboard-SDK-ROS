@@ -86,7 +86,6 @@ add_message_files(
   GPSHealth.msg
   GPSRaw.msg
   BaroHeight.msg
-  DisplayMode.msg
 )
 
 ## Generate services in the 'srv' folder
