@@ -198,16 +198,6 @@ DJISDKNode::dataBroadcastCallback()
   }
 }
 
-template<uint8_t mask_size, uint8_t mask_offset, typename out_t>
-void convert_gps_hex_datetime(uint32_t hex_in, out_t& out)
-{
-  constexpr uint32_t MASK{((1ul << (mask_size * 4ul)) - 1ul) << (mask_offset * 4ul)};
-  hex_in = (hex_in & MASK) >> (4ul * mask_offset);
-  out = static_cast<out_t>(0);
-  for (uint8_t i{0}; i < mask_size; ++i, hex_in /= 16ul)
-    out += std::pow(10, i) * (hex_in % 16ul);
-}
-
 void
 DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
                             DJI::OSDK::UserData userData)
@@ -236,14 +226,16 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   const uint32_t gps_date{vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DATE>()};
   const uint32_t gps_time{vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_TIME>()};
+  // gps_date format: YYYYMMSS
+  // gps_time format: hhmmss
   dji_sdk::DateTimeStamped gps_datetime;
-  gps_datetime.header.stamp = msg_time;
-  convert_gps_hex_datetime<4, 4>(gps_date, gps_datetime.datetime.year);
-  convert_gps_hex_datetime<2, 2>(gps_date, gps_datetime.datetime.mon);
-  convert_gps_hex_datetime<2, 0>(gps_date, gps_datetime.datetime.day);
-  convert_gps_hex_datetime<2, 4>(gps_time, gps_datetime.datetime.hour);
-  convert_gps_hex_datetime<2, 2>(gps_time, gps_datetime.datetime.min);
-  convert_gps_hex_datetime<2, 0>(gps_time, gps_datetime.datetime.sec);
+  gps_datetime.header.stamp   = msg_time;
+  gps_datetime.datetime.year  = gps_date / 10000ul;
+  gps_datetime.datetime.mon   = (gps_date % 10000ul) / 100ul;
+  gps_datetime.datetime.day   = (gps_date % 10000ul) % 100ul;
+  gps_datetime.datetime.hour  = gps_time / 10000ul;
+  gps_datetime.datetime.min   = (gps_time % 10000ul) / 100ul;
+  gps_datetime.datetime.sec   = (gps_time % 10000ul) % 100ul;
   p->gps_datetime_publisher.publish(gps_datetime);
 
   //TODO: publish gps detail data if needed
