@@ -48,6 +48,7 @@
 #include <dji_sdk/GPSRaw.h>
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/UInt8Stamped.h>
+#include <dji_sdk/DateTimeStamped.h>
 
 //! mission service
 // missionManager
@@ -393,6 +394,7 @@ private:
   ros::Publisher local_position_publisher;
   ros::Publisher local_frame_ref_publisher;
   ros::Publisher local_gps_position_publisher;
+  ros::Publisher gps_datetime_publisher;
   //! Local RTK Position Publisher (Publishes local RTK position in ENU frame)
   ros::Publisher local_rtk_position_publisher;
   ros::Publisher local_rtk_frame_ref_publisher;

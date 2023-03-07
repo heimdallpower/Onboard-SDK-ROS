@@ -30,14 +30,21 @@ void DJISDKNode::GPSUTCTimeCallback(Vehicle *vehiclePtr,
                                     RecvContainer recvFrame,
                                     UserData userData)
 {
+  DJISDKNode *p = (DJISDKNode *) userData;
   dji_sdk::GPSUTC GPSUTC;
   int length = recvFrame.recvInfo.len - OpenProtocol::PackageMin - 4;
   uint8_t rawBuf[length];
   memcpy(rawBuf, recvFrame.recvData.raw_ack_array, length);
   GPSUTC.stamp = ros::Time::now();
   GPSUTC.UTCTimeData = std::string((char*)rawBuf, length).c_str();
-  DJISDKNode *p = (DJISDKNode *) userData;
   p->time_sync_gps_utc_publisher.publish(GPSUTC);
+  // ROS_ASSERT(DJISDKNode::PACKAGE_ID_5HZ == *data );
+  Telemetry::TimeStamp packageTimeStamp = *(reinterpret_cast<Telemetry::TimeStamp*>(recvFrame.recvData.raw_ack_array + 1));
+  ROS_INFO_STREAM("[DJISDKNode::GPSUTCTimeCallback]\n" <<
+    "Aligned time: " << p->base_time + ros::Duration((double)(packageTimeStamp.time_ms) / 1000.0) << "\n"
+    "Now time    : " << GPSUTC.stamp
+  );
+
 }
 
 void DJISDKNode::FCTimeInUTCCallback(Vehicle* vehiclePtr,

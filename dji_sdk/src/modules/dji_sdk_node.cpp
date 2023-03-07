@@ -311,6 +311,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   local_gps_position_publisher =
       nh.advertise<dji_sdk::GPSPosition>("dji_sdk/local_gps_position", 10);
 
+  gps_datetime_publisher =
+      nh.advertise<dji_sdk::DateTimeStamped>("dji_sdk/gps_datetime", 10);
+
   local_frame_ref_publisher =
       nh.advertise<sensor_msgs::NavSatFix>("dji_sdk/local_frame_ref", 10, true);
 

@@ -14,6 +14,7 @@
 #include <dji_sdk/GPSHealth.h>
 #include <dji_sdk/GPSRaw.h>
 #include <dji_sdk/BaroHeight.h>
+#include <dji_sdk/DateTimeStamped.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
 #include <dji_telemetry.hpp>
@@ -222,6 +223,12 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
       return;
     }
   }
+
+  dji_sdk::DateTimeStamped gps_datetime;
+  gps_datetime.header.stamp = msg_time;
+  gps_datetime.datetime.date = vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DATE>();
+  gps_datetime.datetime.time = vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_TIME>();
+  p->gps_datetime_publisher.publish(gps_datetime);
 
   //TODO: publish gps detail data if needed
   Telemetry::TypeMap<Telemetry::TOPIC_BATTERY_INFO>::type battery_info=
