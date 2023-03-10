@@ -89,6 +89,7 @@ add_message_files(
   GPSHealth.msg
   GPSRaw.msg
   BaroHeight.msg
+  SDKInfo.msg
 )
 
 ## Generate services in the 'srv' folder
