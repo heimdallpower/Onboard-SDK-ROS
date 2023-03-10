@@ -417,7 +417,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
       nh.advertise<dji_sdk::UInt8Stamped>("dji_sdk/display_mode", 10);
 
     control_device_publisher =
-      nh.advertise<dji_sdk::UInt8Stamped>("dji_sdk/control_device", 10);
+      nh.advertise<dji_sdk::SDKInfo>("dji_sdk/control_device", 10);
 
     angularRate_publisher =
       nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/angular_velocity_fused", 10);

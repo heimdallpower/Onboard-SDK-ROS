@@ -592,9 +592,11 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   Telemetry::TypeMap<Telemetry::TOPIC_CONTROL_DEVICE>::type control_device =
     vehicle->subscribe->getValue<Telemetry::TOPIC_CONTROL_DEVICE>();
 
-  dji_sdk::UInt8Stamped control_device_msg;
+  dji_sdk::SDKInfo control_device_msg;
   control_device_msg.header.stamp = msg_time;
-  control_device_msg.data = control_device.flightStatus;
+  control_device_msg.controlMode = control_device.controlMode;
+  control_device_msg.deviceStatus = control_device.deviceStatus;
+  control_device_msg.flightStatus = control_device.flightStatus;
   p->control_device_publisher.publish(control_device_msg);
 
   /*!
