@@ -416,6 +416,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
     displaymode_publisher =
       nh.advertise<dji_sdk::UInt8Stamped>("dji_sdk/display_mode", 10);
 
+    control_device_publisher =
+      nh.advertise<dji_sdk::UInt8Stamped>("dji_sdk/control_device", 10);
+
     angularRate_publisher =
       nh.advertise<geometry_msgs::Vector3Stamped>("dji_sdk/angular_velocity_fused", 10);
 
@@ -488,6 +491,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   topicList50Hz.push_back(Telemetry::TOPIC_HEIGHT_FUSION);
   topicList50Hz.push_back(Telemetry::TOPIC_STATUS_FLIGHT);
   topicList50Hz.push_back(Telemetry::TOPIC_STATUS_DISPLAYMODE);
+  topicList50Hz.push_back(Telemetry::TOPIC_CONTROL_DEVICE);
   topicList50Hz.push_back(Telemetry::TOPIC_RC);
   topicList50Hz.push_back(Telemetry::TOPIC_VELOCITY);
   topicList50Hz.push_back(Telemetry::TOPIC_GPS_CONTROL_LEVEL);

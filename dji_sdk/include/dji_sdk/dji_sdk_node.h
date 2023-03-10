@@ -380,6 +380,7 @@ private:
   ros::Publisher from_mobile_data_publisher;
   ros::Publisher from_payload_data_publisher;
   ros::Publisher displaymode_publisher;
+  ros::Publisher control_device_publisher;
   ros::Publisher rc_publisher;
   ros::Publisher rc_connection_status_publisher;
   ros::Publisher rtk_position_publisher;

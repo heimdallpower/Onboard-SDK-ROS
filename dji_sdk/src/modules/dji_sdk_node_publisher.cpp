@@ -589,6 +589,14 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   status_dm.data = dm;
   p->displaymode_publisher.publish(status_dm);
 
+  Telemetry::TypeMap<Telemetry::TOPIC_CONTROL_DEVICE>::type control_device =
+    vehicle->subscribe->getValue<Telemetry::TOPIC_CONTROL_DEVICE>();
+
+  dji_sdk::UInt8Stamped control_device_msg;
+  control_device_msg.header.stamp = msg_time;
+  control_device_msg.data = control_device_msg.flightStatus;
+  p->control_device_publisher.publish(control_device_msg);
+
   /*!
    * note: Since FW version 3.3.0 and SDK version 3.7, we expose all the button on the LB2 RC
    *       as well as the RC connection status via different topics.
