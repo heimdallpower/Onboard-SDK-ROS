@@ -594,7 +594,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
 
   dji_sdk::UInt8Stamped control_device_msg;
   control_device_msg.header.stamp = msg_time;
-  control_device_msg.data = control_device_msg.flightStatus;
+  control_device_msg.data = control_device.flightStatus;
   p->control_device_publisher.publish(control_device_msg);
 
   /*!
