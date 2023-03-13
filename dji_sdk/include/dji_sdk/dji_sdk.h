@@ -132,8 +132,6 @@ enum M100FlightStatus
   M100_STATUS_FINISHED_LANDING = DJI::OSDK::VehicleStatus::M100FlightStatus::FINISHING_LANDING
 };
 
-}
-
 namespace ControlDevice
 {
   enum DeviceStatus
@@ -142,6 +140,8 @@ namespace ControlDevice
     APP,
     OSDK
   };
+}
+
 }
 
 #endif //PROJECT_DJI_SDK_H_H

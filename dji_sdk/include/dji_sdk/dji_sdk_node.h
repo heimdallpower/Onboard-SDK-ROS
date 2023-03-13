@@ -49,6 +49,7 @@
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/UInt8Stamped.h>
 #include <dji_sdk/DateTimeStamped.h>
+#include <dji_sdk/SDKInfo.h>
 
 //! mission service
 // missionManager
