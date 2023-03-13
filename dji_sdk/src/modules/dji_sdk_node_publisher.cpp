@@ -596,7 +596,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   control_device_msg.header.stamp = msg_time;
   control_device_msg.controlMode = control_device.controlMode;
   control_device_msg.deviceStatus = control_device.deviceStatus;
-  control_device_msg.flightStatus = control_device.flightStatus;
+  control_device_msg.sdkControl = control_device.flightStatus;
   p->control_device_publisher.publish(control_device_msg);
 
   /*!
