@@ -210,6 +210,10 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   data++;
   Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
 
+  // const timespec tspec{
+  //   p->pps_sync_->getSystemTime(packageTimeStamp)
+  // };
+
   ros::Time msg_time = ros::Time::now();
 
   if(p->align_time_with_FC)
@@ -422,6 +426,10 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   ROS_ASSERT(DJISDKNode::PACKAGE_ID_50HZ == *data );
   data++;
   Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
+
+  // const timespec tspec{
+  //   p->pps_sync_->getSystemTime(packageTimeStamp)
+  // };
 
   ros::Time msg_time = ros::Time::now();
 
@@ -714,6 +722,10 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   data++;
   Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
 
+  // const timespec tspec{
+  //   p->pps_sync_->getSystemTime(packageTimeStamp)
+  // };
+
   ros::Time msg_time = ros::Time::now();
 
   if(p->align_time_with_FC)
@@ -809,6 +821,10 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hardSync_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
+
+  // const timespec tspec{
+  //   p->pps_sync_->getSystemTime(hardSync_FC.ts, packageTimeStamp)
+  // };
 
   ros::Time now_time = ros::Time::now();
   ros::Time msg_time = now_time;

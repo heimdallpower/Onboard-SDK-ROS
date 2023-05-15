@@ -195,11 +195,14 @@ add_dependencies(dji_sdk_geometry
 add_dependencies(dji_sdk_node
   dji_sdk_generate_messages_cpp)
 
+add_subdirectory(include/drone_pps)
+
 ## Specify libraries to link a library or executable target against
 target_link_libraries(dji_sdk_node
   ${catkin_LIBRARIES}
   ${DJIOSDK_LIBRARIES}
   dji_sdk_geometry
+  drone_pps
 )
 
 #############

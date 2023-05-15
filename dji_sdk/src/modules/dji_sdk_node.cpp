@@ -54,33 +54,67 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
   {
     ROS_ERROR("Vehicle initialization failed");
     ros::shutdown();
+    return;
   }
 
-  else
+  // std::string pps_device_path;
+  // if (!nh_private.getParam("pps_device_path", pps_device_path))
+  // {
+  //   ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
+  //   ros::shutdown();
+  //   return;
+  // }
+
+  vehicle->hardSync->setSyncFreq(1ul);
+
+  // pps::Handler::CreationStatus pps_creation_status;
+  
+  // pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
+  //   pps_device_path,
+  //   pps_creation_status
+  // });
+  // switch (pps_creation_status)
+  // {
+  // case pps::Handler::DEVICE_OPEN_ERROR:
+  //   ROS_ERROR_STREAM("[dji_sdk] Could not open PPS device. Shutting down");
+  //   break;
+  // case pps::Handler::PPS_SOURCE_CREATION_ERROR:
+  //   ROS_ERROR_STREAM("[dji_sdk] Could not create PPS device. Shutting down");
+  //   break;
+  // default:
+  //   ROS_ERROR_STREAM("[dji_sdk] PPS initiated.");
+  //   break;
+  // }
+
+  // if (pps_creation_status != pps::Handler::OK)
+  // {
+  //   ROS_ERROR_STREAM("[dji_sdk] PPS init error. Shutting down.");
+  //   ros::shutdown();
+  //   return;
+  // }
+
+  if (!initServices(nh))
   {
-    if (!initServices(nh))
-    {
-      ROS_ERROR("initServices failed");
-      ros::shutdown();
-    }
+    ROS_ERROR("initServices failed");
+    ros::shutdown();
+  }
 
-    if (!initFlightControl(nh))
-    {
-      ROS_ERROR("initFlightControl failed");
-      ros::shutdown();
-    }
+  if (!initFlightControl(nh))
+  {
+    ROS_ERROR("initFlightControl failed");
+    ros::shutdown();
+  }
 
-    if (!initSubscriber(nh))
-    {
-      ROS_ERROR("initSubscriber failed");
-      ros::shutdown();
-    }
+  if (!initSubscriber(nh))
+  {
+    ROS_ERROR("initSubscriber failed");
+    ros::shutdown();
+  }
 
-    if (!initPublisher(nh))
-    {
-      ROS_ERROR("initPublisher failed");
-      ros::shutdown();
-    }
+  if (!initPublisher(nh))
+  {
+    ROS_ERROR("initPublisher failed");
+    ros::shutdown();
   }
 }
 

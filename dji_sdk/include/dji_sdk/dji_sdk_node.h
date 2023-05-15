@@ -88,6 +88,9 @@
 #include <dji_sdk/SetupCameraStream.h>
 #endif
 
+//! PPS synchronization
+#include "pps_synchronizer.hpp"
+
 //! SDK library
 #include <djiosdk/dji_vehicle.hpp>
 
@@ -478,6 +481,8 @@ private:
   double bias_gps_latitude, bias_gps_longitude, bias_gps_altitude;
   int current_rtk_health;
   bool rtkSupport;
+
+  // std::unique_ptr<DJISDK::Synchronizer> pps_sync_;
 };
 
 #endif // DJI_SDK_NODE_MAIN_H
