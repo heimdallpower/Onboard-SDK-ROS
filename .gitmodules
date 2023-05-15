@@ -1,0 +1,3 @@
+[submodule "drone_pps"]
+	path = dji_sdk/include/drone_pps
+	url = git@github.com:heimdallpower/drone_pps.git
