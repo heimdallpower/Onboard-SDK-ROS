@@ -57,41 +57,41 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     return;
   }
 
-  // std::string pps_device_path;
-  // if (!nh_private.getParam("pps_device_path", pps_device_path))
-  // {
-  //   ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
-  //   ros::shutdown();
-  //   return;
-  // }
+  std::string pps_device_path;
+  if (!nh_private.getParam("pps_device_path", pps_device_path))
+  {
+    ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
+    ros::shutdown();
+    return;
+  }
 
   vehicle->hardSync->setSyncFreq(1ul);
 
-  // pps::Handler::CreationStatus pps_creation_status;
+  pps::Handler::CreationStatus pps_creation_status;
   
-  // pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
-  //   pps_device_path,
-  //   pps_creation_status
-  // });
-  // switch (pps_creation_status)
-  // {
-  // case pps::Handler::DEVICE_OPEN_ERROR:
-  //   ROS_ERROR_STREAM("[dji_sdk] Could not open PPS device. Shutting down");
-  //   break;
-  // case pps::Handler::PPS_SOURCE_CREATION_ERROR:
-  //   ROS_ERROR_STREAM("[dji_sdk] Could not create PPS device. Shutting down");
-  //   break;
-  // default:
-  //   ROS_ERROR_STREAM("[dji_sdk] PPS initiated.");
-  //   break;
-  // }
+  pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
+    pps_device_path,
+    pps_creation_status
+  });
+  switch (pps_creation_status)
+  {
+  case pps::Handler::DEVICE_OPEN_ERROR:
+    ROS_ERROR_STREAM("[dji_sdk] Could not open PPS device. Shutting down");
+    break;
+  case pps::Handler::PPS_SOURCE_CREATION_ERROR:
+    ROS_ERROR_STREAM("[dji_sdk] Could not create PPS device. Shutting down");
+    break;
+  default:
+    ROS_ERROR_STREAM("[dji_sdk] PPS initiated.");
+    break;
+  }
 
-  // if (pps_creation_status != pps::Handler::OK)
-  // {
-  //   ROS_ERROR_STREAM("[dji_sdk] PPS init error. Shutting down.");
-  //   ros::shutdown();
-  //   return;
-  // }
+  if (pps_creation_status != pps::Handler::OK)
+  {
+    ROS_ERROR_STREAM("[dji_sdk] PPS init error. Shutting down.");
+    ros::shutdown();
+    return;
+  }
 
   if (!initServices(nh))
   {
@@ -371,6 +371,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
   time_sync_pps_source_publisher =
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
+
+  pps_trig_publisher =
+      nh.advertise<sensor_msgs::TimeReference>("dji_sdk/pps_trig_time", 10);
 
 #ifdef ADVANCED_SENSING
   stereo_240p_front_left_publisher =

@@ -822,9 +822,6 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hardSync_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
 
-  // const timespec tspec{
-  //   p->pps_sync_->getSystemTime(hardSync_FC.ts, packageTimeStamp)
-  // };
 
   ros::Time now_time = ros::Time::now();
   ros::Time msg_time = now_time;
@@ -841,6 +838,21 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
       return;
     }
   }
+
+  const timespec tspec{
+    p->pps_sync_->getSystemTime(hardSync_FC.ts, packageTimeStamp)
+  };
+
+  if (hardSync_FC.ts.flag)
+  {
+    sensor_msgs::TimeReference pps_trig_msg;
+    pps_trig_msg.header.stamp.sec = tspec.tv_sec;
+    pps_trig_msg.header.stamp.nsec = tspec.tv_nsec;
+    pps_trig_msg.time_ref = msg_time;
+    pps_trig_msg.source = "FC";
+    p->pps_trig_publisher.publish(pps_trig_msg);
+  }
+
 
   sensor_msgs::Imu synced_imu;
 
