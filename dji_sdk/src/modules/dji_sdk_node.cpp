@@ -57,13 +57,13 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     return;
   }
 
-  std::string pps_device_path;
-  if (!nh_private.getParam("pps_device_path", pps_device_path))
-  {
-    ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
-    ros::shutdown();
-    return;
-  }
+  // std::string pps_device_path;
+  // if (!nh_private.getParam("pps_device_path", pps_device_path))
+  // {
+  //   ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
+  //   ros::shutdown();
+  //   return;
+  // }
 
   vehicle->hardSync->setSyncFreq(1ul);
 
