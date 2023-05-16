@@ -839,19 +839,19 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
     }
   }
 
-  const timespec tspec{
-    p->pps_sync_->getSystemTime(hardSync_FC.ts, packageTimeStamp)
-  };
+  // const timespec tspec{
+  //   p->pps_sync_->getSystemTime(hardSync_FC.ts, packageTimeStamp)
+  // };
 
-  if (hardSync_FC.ts.flag)
-  {
-    sensor_msgs::TimeReference pps_trig_msg;
-    pps_trig_msg.header.stamp.sec = tspec.tv_sec;
-    pps_trig_msg.header.stamp.nsec = tspec.tv_nsec;
-    pps_trig_msg.time_ref = msg_time;
-    pps_trig_msg.source = "FC";
-    p->pps_trig_publisher.publish(pps_trig_msg);
-  }
+  // if (hardSync_FC.ts.flag)
+  // {
+  //   sensor_msgs::TimeReference pps_trig_msg;
+  //   pps_trig_msg.header.stamp.sec = tspec.tv_sec;
+  //   pps_trig_msg.header.stamp.nsec = tspec.tv_nsec;
+  //   pps_trig_msg.time_ref = msg_time;
+  //   pps_trig_msg.source = "FC";
+  //   p->pps_trig_publisher.publish(pps_trig_msg);
+  // }
 
 
   sensor_msgs::Imu synced_imu;
