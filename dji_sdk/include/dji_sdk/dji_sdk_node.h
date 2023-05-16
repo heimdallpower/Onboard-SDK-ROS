@@ -408,6 +408,8 @@ private:
   ros::Publisher time_sync_fc_utc_publisher;
   ros::Publisher time_sync_pps_source_publisher;
 
+  ros::Publisher pps_trig_publisher;
+
 #ifdef ADVANCED_SENSING
   ros::Publisher stereo_240p_front_left_publisher;
   ros::Publisher stereo_240p_front_right_publisher;
@@ -482,7 +484,7 @@ private:
   int current_rtk_health;
   bool rtkSupport;
 
-  // std::unique_ptr<DJISDK::Synchronizer> pps_sync_;
+  std::unique_ptr<DJISDK::Synchronizer> pps_sync_;
 };
 
 #endif // DJI_SDK_NODE_MAIN_H
