@@ -81,16 +81,19 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     }
     get_sync_timestamp = boost::bind(&DJISDKNode::getDataHardSyncedTimestamp, this, _1, _2, _3, _4);
     get_data_timestamp = boost::bind(&DJISDKNode::getDataHardSyncedTimestamp, this, _1, _2, _3);
+    ROS_INFO("[dji_sdk] PPS used for time synchronization.");
   }
   else if (align_time_with_FC)
   {
     get_sync_timestamp = boost::bind(&DJISDKNode::getDataSoftSyncedTimestamp, this, _1, _2, _3, _4);
     get_data_timestamp = boost::bind(&DJISDKNode::getDataSoftSyncedTimestamp, this, _1, _2, _3);
+    ROS_INFO("[dji_sdk] Software used for time synchronization.");
   }
   else
   {
     get_sync_timestamp = boost::bind(&DJISDKNode::getDataUnSyncedTimestamp, this, _1, _2, _3, _4);
     get_data_timestamp = boost::bind(&DJISDKNode::getDataUnSyncedTimestamp, this, _1, _2, _3);
+    ROS_INFO("[dji_sdk] No time synchronization. ros::Time::now() of arrival used to stamp data.");
   }
 
   if (!initServices(nh))
@@ -435,15 +438,6 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   else if (telemetry_from_fc == USE_SUBSCRIBE)
   {
     ROS_INFO("Use data subscription to get telemetry data!");
-    if(!align_time_with_FC)
-    {
-      ROS_INFO("align_time_with_FC set to false. We will use ros time to time stamp messages!");
-    }
-    else
-    {
-      ROS_INFO("align_time_with_FC set to true. We will time stamp messages based on flight controller time!");
-    }
-
     // Extra topics that is only available from subscription
 
     // Details can be found in DisplayMode enum in dji_sdk.h
