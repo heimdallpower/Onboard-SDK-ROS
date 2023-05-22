@@ -14,7 +14,7 @@ public:
   pps_handler_{pps_dev_path, creation_status_out}
   {}
 
-  timespec getSystemTime(const DJI::OSDK::Telemetry::SyncTimestamp& hardsync_timestamp, const DJI::OSDK::Telemetry::TimeStamp& package_timestamp)
+  void getSystemTime(const DJI::OSDK::Telemetry::SyncTimestamp& hardsync_timestamp, const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, ros::Time& system_time_out)
   {
     static constexpr uint32_t scaler{static_cast<uint32_t>(2.5e6)};
     /**
@@ -30,14 +30,17 @@ public:
       in_use_rising_edge_hardsync_time_s_ = hardsync_time_s;
       in_use_rising_edge_package_time_s_  = 1e-3 * package_timestamp.time_ms + 1e-9 * package_timestamp.time_ns;
     }
-
-    return pps::getSystemTime(hardsync_time_s, in_use_rising_edge_hardsync_time_s_, in_use_rising_edge_system_time_);
+    const timespec t{pps::getSystemTime(hardsync_time_s, in_use_rising_edge_hardsync_time_s_, in_use_rising_edge_system_time_)};
+    system_time_out.sec = static_cast<uint32_t>(t.tv_sec);
+    system_time_out.nsec = static_cast<uint32_t>(t.tv_nsec);
   }
 
-  timespec getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& package_timestamp)
+  void getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, ros::Time& system_time_out)
   {
     const double package_time_s_{1e-3 * package_timestamp.time_ms + 1e-9 * package_timestamp.time_ns};
-    return pps::getSystemTime(package_time_s_, in_use_rising_edge_package_time_s_, in_use_rising_edge_system_time_);
+    const timespec t{pps::getSystemTime(package_time_s_, in_use_rising_edge_package_time_s_, in_use_rising_edge_system_time_)};
+    system_time_out.sec = static_cast<uint32_t>(t.tv_sec);
+    system_time_out.nsec = static_cast<uint32_t>(t.tv_nsec);
   }
 
 private:
