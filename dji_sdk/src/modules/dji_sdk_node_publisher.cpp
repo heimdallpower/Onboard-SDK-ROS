@@ -706,11 +706,15 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   const ros::Time now{ros::Time::now()};
   DJISDKNode *p;
   Telemetry::TimeStamp packageTimeStamp;
+
+  ROS_WARN_STREAM("[dji_sdk] Pre-unpack");
+
   unpack<DJISDKNode::PACKAGE_ID_100HZ>(
     userData, recvFrame.recvData.raw_ack_array,
     p, packageTimeStamp
   );
 
+  ROS_WARN_STREAM("[dji_sdk] Pre-get_data_timestamp");
   ros::Time msg_time;
   if (!p->get_data_timestamp(packageTimeStamp, now, msg_time))
     return;
