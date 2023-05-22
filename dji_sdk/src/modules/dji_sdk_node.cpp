@@ -68,14 +68,14 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
 
   if (pps_device_path != "")
   {
-    pps::Handler::CreationStatus pps_creation_status;
+    pps::Handler::CreationStatus pps_creation_status{pps::Handler::CreationStatus::OK};
     pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
       pps_device_path,
       pps_creation_status
     });
-    if (pps_creation_status != pps::Handler::OK)
+    if (pps_creation_status != pps::Handler::CreationStatus::OK)
     {
-      ROS_FATAL_STREAM("[dji_sdk] PPS init error. Shutting down.");
+      ROS_FATAL_STREAM("[dji_sdk] PPS init error " << pps_creation_status << ". Shutting down.");
       ros::shutdown();
       return;
     }
