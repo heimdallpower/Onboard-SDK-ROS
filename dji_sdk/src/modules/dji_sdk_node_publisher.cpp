@@ -717,7 +717,11 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   ROS_WARN_STREAM("[dji_sdk] Pre-get_data_timestamp");
   ros::Time msg_time;
   if (!p->get_data_timestamp(packageTimeStamp, now, msg_time))
+  {
+    ROS_WARN_STREAM("[dji_sdk] Post-get_data_timestamp");
     return;
+  }
+  ROS_WARN_STREAM("[dji_sdk] Post-get_data_timestamp");
 
   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
           vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
