@@ -21,6 +21,21 @@
 
 #define _TICK2ROSTIME(tick) (ros::Duration((double)(tick) / 1000.0))
 
+template<int PackageID>
+inline void unpack
+(
+  const DJI::OSDK::UserData userData,
+  uint8_t raw_ack_array[MAX_INCOMING_DATA_SIZE],
+  DJISDKNode* node_out,
+  Telemetry::TimeStamp& package_time_stamp_out
+)
+{
+  assert(DJISDKNode::PACKAGE_ID_5HZ <= PackageID && PackageID <= DJISDKNode::PACKAGE_ID_400HZ);
+  ROS_ASSERT(*raw_ack_array == PackageID);
+  node_out                = reinterpret_cast<DJISDKNode*>(userData);
+  package_time_stamp_out  = *(reinterpret_cast<Telemetry::TimeStamp*>(raw_ack_array + 1));
+}
+
 
 void
 DJISDKNode::SDKBroadcastCallback(Vehicle* vehicle, RecvContainer recvFrame,
@@ -202,31 +217,17 @@ void
 DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
                             DJI::OSDK::UserData userData)
 {
-  DJISDKNode *p = (DJISDKNode *)userData;
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
+  unpack<DJISDKNode::PACKAGE_ID_5HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    p, packageTimeStamp
+  );
 
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_5HZ == *data );
-
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
-
-  // const timespec tspec{
-  //   p->pps_sync_->getSystemTime(packageTimeStamp)
-  // };
-
-  ros::Time msg_time = ros::Time::now();
-
-  if(p->align_time_with_FC)
-  {
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
+  ros::Time msg_time;
+  if (!p->get_data_timestamp(packageTimeStamp, now, msg_time))
+    return;
 
   const uint32_t gps_date{vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DATE>()};
   const uint32_t gps_time{vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_TIME>()};
@@ -420,30 +421,17 @@ void
 DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
                             DJI::OSDK::UserData userData)
 {
-  DJISDKNode* p = (DJISDKNode*)userData;
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
+  unpack<DJISDKNode::PACKAGE_ID_50HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    p, packageTimeStamp
+  );
 
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_50HZ == *data );
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
-
-  // const timespec tspec{
-  //   p->pps_sync_->getSystemTime(packageTimeStamp)
-  // };
-
-  ros::Time msg_time = ros::Time::now();
-
-  if(p->align_time_with_FC)
-  {
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
+  ros::Time msg_time;
+  if (!p->get_data_timestamp(packageTimeStamp, now, msg_time))
+    return;
 
   Telemetry::TypeMap<Telemetry::TOPIC_GPS_FUSED>::type fused_gps =
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_FUSED>();
@@ -715,30 +703,17 @@ void
 DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                   DJI::OSDK::UserData userData)
 {
-  DJISDKNode *p = (DJISDKNode *)userData;
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
+  unpack<DJISDKNode::PACKAGE_ID_100HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    p, packageTimeStamp
+  );
 
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_100HZ == *data );
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
-
-  // const timespec tspec{
-  //   p->pps_sync_->getSystemTime(packageTimeStamp)
-  // };
-
-  ros::Time msg_time = ros::Time::now();
-
-  if(p->align_time_with_FC)
-  {
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
+  ros::Time msg_time;
+  if (!p->get_data_timestamp(packageTimeStamp, now, msg_time))
+    return;
 
   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
           vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
@@ -811,53 +786,21 @@ void
 DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                   DJI::OSDK::UserData userData)
 {
-  DJISDKNode *p = (DJISDKNode *) userData;
-
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_400HZ == *data );
-
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
+  unpack<DJISDKNode::PACKAGE_ID_400HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    p, packageTimeStamp
+  );
 
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hardSync_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
 
-
-  ros::Time now_time = ros::Time::now();
-  ros::Time msg_time = now_time;
-
-  if(p->align_time_with_FC)
-  {
-    p->alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
-
-  // const timespec tspec{
-  //   p->pps_sync_->getSystemTime(hardSync_FC.ts, packageTimeStamp)
-  // };
-
-  // if (hardSync_FC.ts.flag)
-  // {
-  //   sensor_msgs::TimeReference pps_trig_msg;
-  //   pps_trig_msg.header.stamp.sec = tspec.tv_sec;
-  //   pps_trig_msg.header.stamp.nsec = tspec.tv_nsec;
-  //   pps_trig_msg.time_ref = msg_time;
-  //   pps_trig_msg.source = "FC";
-  //   p->pps_trig_publisher.publish(pps_trig_msg);
-  // }
-
-
   sensor_msgs::Imu synced_imu;
-
   synced_imu.header.frame_id = "body_FLU";
-  synced_imu.header.stamp    = msg_time;
+  if (!p->get_sync_timestamp(hardSync_FC.ts, packageTimeStamp, now, synced_imu.header.stamp))
+    return;
 
   //y, z signs are flipped from RD to LU for rate and accel
   synced_imu.angular_velocity.x    =   hardSync_FC.w.x;
@@ -886,15 +829,97 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   p->imu_publisher.publish(synced_imu);
 
-  if (hardSync_FC.ts.flag == 1)
+}
+
+bool DJISDKNode::getDataUnSyncedTimestamp
+(
+  const Telemetry::TimeStamp&,
+  const ros::Time& now_time,
+  ros::Time& data_time_of_arrival_out
+)
+{
+  data_time_of_arrival_out = now_time;
+  return true;
+}
+
+bool DJISDKNode::getDataSoftSyncedTimestamp
+(
+  const Telemetry::TimeStamp& packageTimeStamp,
+  const ros::Time&,
+  ros::Time& data_time_of_arrival_out
+)
+{
+  data_time_of_arrival_out = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+  return curr_align_state == ALIGNED;
+}
+
+bool DJISDKNode::getDataHardSyncedTimestamp
+(
+  const Telemetry::TimeStamp& packageTimeStamp,
+  const ros::Time&,
+  ros::Time& data_time_of_measurement_out
+)
+{
+  pps_sync_->getSystemTime(packageTimeStamp, data_time_of_measurement_out);
+  return true;
+}
+
+bool DJISDKNode::getDataUnSyncedTimestamp
+(
+  const Telemetry::SyncTimestamp&,
+  const Telemetry::TimeStamp&,
+  const ros::Time& now_time,
+  ros::Time& data_time_of_arrival_out
+)
+{
+  data_time_of_arrival_out = now_time;
+  return true;
+}
+
+bool DJISDKNode::getDataSoftSyncedTimestamp
+(
+  const Telemetry::SyncTimestamp& hardsyncTimeStamp,
+  const Telemetry::TimeStamp& packageTimeStamp,
+  const ros::Time& now_time,
+  ros::Time& data_time_of_arrival_out
+)
+{
+  if(curr_align_state != ALIGNED)
+  {
+    alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
+    return false;
+  }
+  data_time_of_arrival_out = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+
+  if (hardsyncTimeStamp.flag)
   {
     sensor_msgs::TimeReference trigTime;
-    trigTime.header.stamp = msg_time;
+    trigTime.source       = "soft-sync";
+    trigTime.header.stamp = data_time_of_arrival_out;
     trigTime.time_ref     = now_time;
-    trigTime.source       = "FC";
-
-    p->trigger_publisher.publish(trigTime);
+    trigger_publisher.publish(trigTime);
   }
+  return true;
+}
+
+bool DJISDKNode::getDataHardSyncedTimestamp
+(
+  const Telemetry::SyncTimestamp& hardsyncTimeStamp,
+  const Telemetry::TimeStamp& packageTimeStamp,
+  const ros::Time& now_time,
+  ros::Time& data_time_of_measurement_out
+)
+{
+  pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, data_time_of_measurement_out);
+  if (hardsyncTimeStamp.flag)
+  {
+    sensor_msgs::TimeReference trigTime;
+    trigTime.source       = "hard-sync";
+    trigTime.header.stamp = data_time_of_measurement_out;
+    trigTime.time_ref     = now_time;
+    trigger_publisher.publish(trigTime);
+  }
+  return true;
 }
 
 /*!

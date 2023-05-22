@@ -19,15 +19,15 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     R_ENU2NED(tf::Matrix3x3(0,  1,  0, 1,  0,  0, 0,  0, -1)),
     curr_align_state(UNALIGNED)
 {
-  nh_private.param("serial_name",   serial_device, std::string("/dev/ttyUSB0"));
-  nh_private.param("baud_rate",     baud_rate, 921600);
-  nh_private.param("app_id",        app_id,    123456);
-  nh_private.param("app_version",   app_version, 1);
-  nh_private.param("enc_key",       enc_key, std::string("abcd1234"));
-  nh_private.param("drone_version", drone_version, std::string("M100")); // choose M100 as default
-  nh_private.param("gravity_const", gravity_const, 9.801);
-  nh_private.param("align_time",    align_time_with_FC, false);
-  nh_private.param("use_broadcast", user_select_broadcast, false);
+  nh_private.param("serial_name"              , serial_device         , std::string("/dev/ttyUSB0"));
+  nh_private.param("baud_rate"                , baud_rate             , 921600);
+  nh_private.param("app_id"                   , app_id                , 123456);
+  nh_private.param("app_version"              , app_version           , 1);
+  nh_private.param("enc_key"                  , enc_key               , std::string("abcd1234"));
+  nh_private.param("drone_version"            , drone_version         , std::string("M100")); // choose M100 as default
+  nh_private.param("gravity_const"            , gravity_const         , 9.801);
+  nh_private.param("software_time_alignment"  , align_time_with_FC    , false);
+  nh_private.param("use_broadcast"            , user_select_broadcast , false);
 
   //! Default values for local Position
   local_pos_ref_latitude  = 0;
@@ -56,42 +56,42 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     ros::shutdown();
     return;
   }
-
-  // std::string pps_device_path;
-  // if (!nh_private.getParam("pps_device_path", pps_device_path))
-  // {
-  //   ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
-  //   ros::shutdown();
-  //   return;
-  // }
-
   vehicle->hardSync->setSyncFreq(1ul);
 
-  // pps::Handler::CreationStatus pps_creation_status;
-  
-  // pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
-  //   pps_device_path,
-  //   pps_creation_status
-  // });
-  // switch (pps_creation_status)
-  // {
-  // case pps::Handler::DEVICE_OPEN_ERROR:
-  //   ROS_ERROR_STREAM("[dji_sdk] Could not open PPS device. Shutting down");
-  //   break;
-  // case pps::Handler::PPS_SOURCE_CREATION_ERROR:
-  //   ROS_ERROR_STREAM("[dji_sdk] Could not create PPS device. Shutting down");
-  //   break;
-  // default:
-  //   ROS_ERROR_STREAM("[dji_sdk] PPS initiated.");
-  //   break;
-  // }
+  std::string pps_device_path;
+  if (!nh_private.getParam("pps_device", pps_device_path))
+  {
+    ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
+    ros::shutdown();
+    return;
+  }
 
-  // if (pps_creation_status != pps::Handler::OK)
-  // {
-  //   ROS_ERROR_STREAM("[dji_sdk] PPS init error. Shutting down.");
-  //   ros::shutdown();
-  //   return;
-  // }
+  if (pps_device_path != "")
+  {
+    pps::Handler::CreationStatus pps_creation_status;
+    pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
+      pps_device_path,
+      pps_creation_status
+    });
+    if (pps_creation_status != pps::Handler::OK)
+    {
+      ROS_FATAL_STREAM("[dji_sdk] PPS init error. Shutting down.");
+      ros::shutdown();
+      return;
+    }
+    get_sync_timestamp = boost::bind(&DJISDKNode::getDataHardSyncedTimestamp, this, _1, _2, _3, _4);
+    get_data_timestamp = boost::bind(&DJISDKNode::getDataHardSyncedTimestamp, this, _1, _2, _3);
+  }
+  else if (align_time_with_FC)
+  {
+    get_sync_timestamp = boost::bind(&DJISDKNode::getDataSoftSyncedTimestamp, this, _1, _2, _3, _4);
+    get_data_timestamp = boost::bind(&DJISDKNode::getDataSoftSyncedTimestamp, this, _1, _2, _3);
+  }
+  else
+  {
+    get_sync_timestamp = boost::bind(&DJISDKNode::getDataUnSyncedTimestamp, this, _1, _2, _3, _4);
+    get_data_timestamp = boost::bind(&DJISDKNode::getDataUnSyncedTimestamp, this, _1, _2, _3);
+  }
 
   if (!initServices(nh))
   {
@@ -371,9 +371,6 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
   time_sync_pps_source_publisher =
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
-
-  pps_trig_publisher =
-      nh.advertise<sensor_msgs::TimeReference>("dji_sdk/pps_trig_time", 10);
 
 #ifdef ADVANCED_SENSING
   stereo_240p_front_left_publisher =

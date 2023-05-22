@@ -408,8 +408,6 @@ private:
   ros::Publisher time_sync_fc_utc_publisher;
   ros::Publisher time_sync_pps_source_publisher;
 
-  ros::Publisher pps_trig_publisher;
-
 #ifdef ADVANCED_SENSING
   ros::Publisher stereo_240p_front_left_publisher;
   ros::Publisher stereo_240p_front_right_publisher;
@@ -485,6 +483,62 @@ private:
   bool rtkSupport;
 
   std::unique_ptr<DJISDK::Synchronizer> pps_sync_;
+
+  bool getDataUnSyncedTimestamp
+  (
+    const Telemetry::SyncTimestamp& hardsyncTimeStamp,
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_arrival_out
+  );
+  bool getDataUnSyncedTimestamp
+  (
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_arrival_out
+  );
+
+  bool getDataSoftSyncedTimestamp
+  (
+    const Telemetry::SyncTimestamp& hardsyncTimeStamp,
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_arrival_out
+  );
+  bool getDataSoftSyncedTimestamp
+  (
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_arrival_out
+  );
+
+  bool getDataHardSyncedTimestamp
+  (
+    const Telemetry::SyncTimestamp& hardsyncTimeStamp,
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_measurement_out
+  );
+  bool getDataHardSyncedTimestamp
+  (
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_measurement_out
+  );
+
+  std::function<bool(
+    const Telemetry::SyncTimestamp&,
+    const Telemetry::TimeStamp&,
+    const ros::Time&,
+    ros::Time&
+  )> get_sync_timestamp;
+
+  std::function<bool(
+    const Telemetry::TimeStamp&,
+    const ros::Time&,
+    ros::Time&
+  )> get_data_timestamp;
+
 };
 
 #endif // DJI_SDK_NODE_MAIN_H
