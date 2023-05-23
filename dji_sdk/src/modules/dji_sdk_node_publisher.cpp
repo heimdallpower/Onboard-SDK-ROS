@@ -707,23 +707,14 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   DJISDKNode *p;
   Telemetry::TimeStamp packageTimeStamp;
 
-  ROS_WARN_STREAM("[dji_sdk] Pre-unpack");
-
   unpack<DJISDKNode::PACKAGE_ID_100HZ>(
     userData, recvFrame.recvData.raw_ack_array,
     &p, packageTimeStamp
   );
 
-  ROS_WARN_STREAM("[dji_sdk] userData at " << userData << ", node ptr at " << p);
-
-  ROS_WARN_STREAM("[dji_sdk] Pre-get_data_timestamp");
   ros::Time msg_time;
   if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
-  {
-    ROS_WARN_STREAM("[dji_sdk] Post-get_data_timestamp");
     return;
-  }
-  ROS_WARN_STREAM("[dji_sdk] Post-get_data_timestamp");
 
   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
           vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
@@ -855,7 +846,7 @@ bool DJISDKNode::get400HzTimestamp
     {
       if (!pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out))
         return false;
-        
+
       if (hardsyncTimeStamp.flag)
       {
         sensor_msgs::TimeReference trigTime;
