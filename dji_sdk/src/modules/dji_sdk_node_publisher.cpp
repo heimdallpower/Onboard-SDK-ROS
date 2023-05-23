@@ -32,7 +32,7 @@ void unpack
 {
   assert(DJISDKNode::PACKAGE_ID_5HZ <= PackageID && PackageID <= DJISDKNode::PACKAGE_ID_400HZ);
   ROS_ASSERT(*raw_ack_array == PackageID);
-  *node_out               = (DJISDKNode*) userData;
+  *node_out               = reinterpret_cast<DJISDKNode*>(userData);
   package_time_stamp_out  = *(reinterpret_cast<Telemetry::TimeStamp*>(raw_ack_array + 1));
 }
 
