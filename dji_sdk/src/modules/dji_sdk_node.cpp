@@ -96,6 +96,8 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     ROS_INFO("[dji_sdk] No time synchronization. ros::Time::now() of arrival used to stamp data.");
   }
 
+  ROS_ERROR_STREAM("[dji_sdk] node ptr at " << this << "\n");
+
   if (!initServices(nh))
   {
     ROS_ERROR("initServices failed");
