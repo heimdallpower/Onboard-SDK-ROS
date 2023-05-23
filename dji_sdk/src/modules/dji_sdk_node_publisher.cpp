@@ -26,13 +26,13 @@ inline void unpack
 (
   const DJI::OSDK::UserData userData,
   uint8_t raw_ack_array[MAX_INCOMING_DATA_SIZE],
-  DJISDKNode* node_out,
+  DJISDKNode** node_out,
   Telemetry::TimeStamp& package_time_stamp_out
 )
 {
   assert(DJISDKNode::PACKAGE_ID_5HZ <= PackageID && PackageID <= DJISDKNode::PACKAGE_ID_400HZ);
   ROS_ASSERT(*raw_ack_array == PackageID);
-  node_out                = reinterpret_cast<DJISDKNode*>(userData);
+  *node_out               = reinterpret_cast<DJISDKNode*>(userData);
   package_time_stamp_out  = *(reinterpret_cast<Telemetry::TimeStamp*>(raw_ack_array + 1));
 }
 
@@ -222,7 +222,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   Telemetry::TimeStamp packageTimeStamp;
   unpack<DJISDKNode::PACKAGE_ID_5HZ>(
     userData, recvFrame.recvData.raw_ack_array,
-    p, packageTimeStamp
+    &p, packageTimeStamp
   );
 
   ros::Time msg_time;
@@ -426,7 +426,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   Telemetry::TimeStamp packageTimeStamp;
   unpack<DJISDKNode::PACKAGE_ID_50HZ>(
     userData, recvFrame.recvData.raw_ack_array,
-    p, packageTimeStamp
+    &p, packageTimeStamp
   );
 
   ros::Time msg_time;
@@ -711,7 +711,7 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   unpack<DJISDKNode::PACKAGE_ID_100HZ>(
     userData, recvFrame.recvData.raw_ack_array,
-    p, packageTimeStamp
+    &p, packageTimeStamp
   );
 
   ROS_WARN_STREAM("[dji_sdk] Pre-get_data_timestamp");
@@ -799,7 +799,7 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
   Telemetry::TimeStamp packageTimeStamp;
   unpack<DJISDKNode::PACKAGE_ID_400HZ>(
     userData, recvFrame.recvData.raw_ack_array,
-    p, packageTimeStamp
+    &p, packageTimeStamp
   );
 
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hardSync_FC =
