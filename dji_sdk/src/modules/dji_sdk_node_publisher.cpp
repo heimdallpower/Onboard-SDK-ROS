@@ -853,7 +853,9 @@ bool DJISDKNode::get400HzTimestamp
   {
     case PPS_SYNC:
     {
-      pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out);
+      if (!pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out))
+        return false;
+        
       if (hardsyncTimeStamp.flag)
       {
         sensor_msgs::TimeReference trigTime;
