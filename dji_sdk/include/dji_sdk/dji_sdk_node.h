@@ -484,60 +484,27 @@ private:
 
   std::unique_ptr<DJISDK::Synchronizer> pps_sync_;
 
-  bool getUnSyncedSyncTimestamp
-  (
-    const Telemetry::SyncTimestamp& hardsyncTimeStamp,
-    const Telemetry::TimeStamp& packageTimeStamp,
-    const ros::Time& now_time,
-    ros::Time& data_time_of_arrival_out
-  );
-  bool getUnSyncedDataTimestamp
-  (
-    const Telemetry::TimeStamp& packageTimeStamp,
-    const ros::Time& now_time,
-    ros::Time& data_time_of_arrival_out
-  );
+  enum TimeStampSelect: uint8_t
+  {
+    PPS_SYNC,
+    SOFT_SYNC,
+    NO_SYNC
+  } timestamp_select;
 
-  bool getSoftSyncedSyncTimestamp
-  (
-    const Telemetry::SyncTimestamp& hardsyncTimeStamp,
-    const Telemetry::TimeStamp& packageTimeStamp,
-    const ros::Time& now_time,
-    ros::Time& data_time_of_arrival_out
-  );
-  bool getSoftSyncedDataTimestamp
-  (
-    const Telemetry::TimeStamp& packageTimeStamp,
-    const ros::Time& now_time,
-    ros::Time& data_time_of_arrival_out
-  );
-
-  bool getHardSyncedSyncTimestamp
+  bool get400HzTimestamp
   (
     const Telemetry::SyncTimestamp& hardsyncTimeStamp,
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
     ros::Time& data_time_of_measurement_out
   );
-  bool getHardSyncedDataTimestamp
+
+  bool getSub400HzTimestamp
   (
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
     ros::Time& data_time_of_measurement_out
   );
-
-  std::function<bool(
-    const Telemetry::SyncTimestamp&,
-    const Telemetry::TimeStamp&,
-    const ros::Time&,
-    ros::Time&
-  )> get_sync_timestamp;
-
-  std::function<bool(
-    const Telemetry::TimeStamp&,
-    const ros::Time&,
-    ros::Time&
-  )> get_data_timestamp;
 
 };
 
