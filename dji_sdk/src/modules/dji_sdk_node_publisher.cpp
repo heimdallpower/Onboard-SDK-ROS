@@ -22,9 +22,9 @@
 #define _TICK2ROSTIME(tick) (ros::Duration((double)(tick) / 1000.0))
 
 template<int PackageID>
-inline void unpack
+void unpack
 (
-  const DJI::OSDK::UserData userData,
+  DJI::OSDK::UserData userData,
   uint8_t raw_ack_array[MAX_INCOMING_DATA_SIZE],
   DJISDKNode* node_out,
   Telemetry::TimeStamp& package_time_stamp_out
@@ -32,7 +32,7 @@ inline void unpack
 {
   assert(DJISDKNode::PACKAGE_ID_5HZ <= PackageID && PackageID <= DJISDKNode::PACKAGE_ID_400HZ);
   ROS_ASSERT(*raw_ack_array == PackageID);
-  node_out                = reinterpret_cast<DJISDKNode*>(userData);
+  node_out                = (DJISDKNode*) userData;
   package_time_stamp_out  = *(reinterpret_cast<Telemetry::TimeStamp*>(raw_ack_array + 1));
 }
 
