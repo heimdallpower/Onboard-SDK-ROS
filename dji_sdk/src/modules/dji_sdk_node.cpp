@@ -79,20 +79,20 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
       ros::shutdown();
       return;
     }
-    get_sync_timestamp = boost::bind(&DJISDKNode::getDataHardSyncedTimestamp, this, _1, _2, _3, _4);
-    get_data_timestamp = boost::bind(&DJISDKNode::getDataHardSyncedTimestamp, this, _1, _2, _3);
+    get_sync_timestamp = std::bind(&DJISDKNode::getHardSyncedSyncTimestamp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    get_data_timestamp = std::bind(&DJISDKNode::getHardSyncedDataTimestamp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     ROS_INFO("[dji_sdk] PPS used for time synchronization.");
   }
   else if (align_time_with_FC)
   {
-    get_sync_timestamp = boost::bind(&DJISDKNode::getDataSoftSyncedTimestamp, this, _1, _2, _3, _4);
-    get_data_timestamp = boost::bind(&DJISDKNode::getDataSoftSyncedTimestamp, this, _1, _2, _3);
+    get_sync_timestamp = std::bind(&DJISDKNode::getSoftSyncedSyncTimestamp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    get_data_timestamp = std::bind(&DJISDKNode::getSoftSyncedDataTimestamp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     ROS_INFO("[dji_sdk] Software used for time synchronization.");
   }
   else
   {
-    get_sync_timestamp = boost::bind(&DJISDKNode::getDataUnSyncedTimestamp, this, _1, _2, _3, _4);
-    get_data_timestamp = boost::bind(&DJISDKNode::getDataUnSyncedTimestamp, this, _1, _2, _3);
+    get_sync_timestamp = std::bind(&DJISDKNode::getUnSyncedSyncTimestamp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    get_data_timestamp = std::bind(&DJISDKNode::getUnSyncedDataTimestamp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     ROS_INFO("[dji_sdk] No time synchronization. ros::Time::now() of arrival used to stamp data.");
   }
 

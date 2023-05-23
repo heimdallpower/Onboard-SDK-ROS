@@ -839,7 +839,7 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
 }
 
-bool DJISDKNode::getDataUnSyncedTimestamp
+bool DJISDKNode::getUnSyncedDataTimestamp
 (
   const Telemetry::TimeStamp&,
   const ros::Time& now_time,
@@ -850,7 +850,7 @@ bool DJISDKNode::getDataUnSyncedTimestamp
   return true;
 }
 
-bool DJISDKNode::getDataSoftSyncedTimestamp
+bool DJISDKNode::getSoftSyncedDataTimestamp
 (
   const Telemetry::TimeStamp& packageTimeStamp,
   const ros::Time&,
@@ -861,7 +861,7 @@ bool DJISDKNode::getDataSoftSyncedTimestamp
   return curr_align_state == ALIGNED;
 }
 
-bool DJISDKNode::getDataHardSyncedTimestamp
+bool DJISDKNode::getHardSyncedDataTimestamp
 (
   const Telemetry::TimeStamp& packageTimeStamp,
   const ros::Time&,
@@ -872,7 +872,7 @@ bool DJISDKNode::getDataHardSyncedTimestamp
   return true;
 }
 
-bool DJISDKNode::getDataUnSyncedTimestamp
+bool DJISDKNode::getUnSyncedSyncTimestamp
 (
   const Telemetry::SyncTimestamp&,
   const Telemetry::TimeStamp&,
@@ -884,7 +884,7 @@ bool DJISDKNode::getDataUnSyncedTimestamp
   return true;
 }
 
-bool DJISDKNode::getDataSoftSyncedTimestamp
+bool DJISDKNode::getSoftSyncedSyncTimestamp
 (
   const Telemetry::SyncTimestamp& hardsyncTimeStamp,
   const Telemetry::TimeStamp& packageTimeStamp,
@@ -910,7 +910,7 @@ bool DJISDKNode::getDataSoftSyncedTimestamp
   return true;
 }
 
-bool DJISDKNode::getDataHardSyncedTimestamp
+bool DJISDKNode::getHardSyncedSyncTimestamp
 (
   const Telemetry::SyncTimestamp& hardsyncTimeStamp,
   const Telemetry::TimeStamp& packageTimeStamp,

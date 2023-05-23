@@ -484,42 +484,42 @@ private:
 
   std::unique_ptr<DJISDK::Synchronizer> pps_sync_;
 
-  bool getDataUnSyncedTimestamp
+  bool getUnSyncedSyncTimestamp
   (
     const Telemetry::SyncTimestamp& hardsyncTimeStamp,
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
     ros::Time& data_time_of_arrival_out
   );
-  bool getDataUnSyncedTimestamp
+  bool getUnSyncedDataTimestamp
   (
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
     ros::Time& data_time_of_arrival_out
   );
 
-  bool getDataSoftSyncedTimestamp
+  bool getSoftSyncedSyncTimestamp
   (
     const Telemetry::SyncTimestamp& hardsyncTimeStamp,
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
     ros::Time& data_time_of_arrival_out
   );
-  bool getDataSoftSyncedTimestamp
+  bool getSoftSyncedDataTimestamp
   (
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
     ros::Time& data_time_of_arrival_out
   );
 
-  bool getDataHardSyncedTimestamp
+  bool getHardSyncedSyncTimestamp
   (
     const Telemetry::SyncTimestamp& hardsyncTimeStamp,
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
     ros::Time& data_time_of_measurement_out
   );
-  bool getDataHardSyncedTimestamp
+  bool getHardSyncedDataTimestamp
   (
     const Telemetry::TimeStamp& packageTimeStamp,
     const ros::Time& now_time,
