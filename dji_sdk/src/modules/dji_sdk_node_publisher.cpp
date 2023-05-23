@@ -714,6 +714,8 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
     p, packageTimeStamp
   );
 
+  ROS_WARN_STREAM("[dji_sdk] userData at " << userData << ", node ptr at " << p);
+
   ROS_WARN_STREAM("[dji_sdk] Pre-get_data_timestamp");
   ros::Time msg_time;
   if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
