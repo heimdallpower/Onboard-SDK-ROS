@@ -22,43 +22,58 @@ public:
      * Formula from
      * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
     */
-    const double hardsync_time_s{1e-9 * ((hardsync_timestamp.time1ns % scaler) + (hardsync_timestamp.time2p5ms * scaler))};
+    constexpr uint32_t SCALER{2500000};
+    timespec hardsync_ts;
+    pps::nsecs2timespec(
+      static_cast<uint64_t>(hardsync_timestamp.time1ns % SCALER) + static_cast<uint64_t>(hardsync_timestamp.time2p5ms * SCALER),
+      hardsync_ts
+    );
 
     bool new_pulse_arrived{false};
-    const bool pps_fetch_ok{pps_handler_.getLastRisingEdgeTime(last_rising_edge_system_time_, new_pulse_arrived)};
+    const bool pps_fetch_ok{pps_handler_.getLastRisingEdgeTime(last_rising_edge_system_ts_, new_pulse_arrived)};
     pulse_arrived_since_prev_flag_ |= new_pulse_arrived;
 
     if (hardsync_timestamp.flag && pulse_arrived_since_prev_flag_)
     {
       pulse_arrived_since_prev_flag_      = false;
-      in_use_rising_edge_system_time_     = last_rising_edge_system_time_;
-      in_use_rising_edge_hardsync_time_s_ = hardsync_time_s;
-      in_use_rising_edge_package_time_s_  = 1e-3 * package_timestamp.time_ms + 1e-9 * package_timestamp.time_ns;
+      in_use_rising_edge_system_ts_       = last_rising_edge_system_ts_;
+      in_use_rising_edge_hardsync_ts_     = hardsync_ts;
+      getPackageTimespec(package_timestamp, in_use_rising_edge_package_ts_);
     }
-    const timespec t{pps::getSystemTime(hardsync_time_s, in_use_rising_edge_hardsync_time_s_, in_use_rising_edge_system_time_)};
-    system_time_out.sec = static_cast<uint32_t>(t.tv_sec);
-    system_time_out.nsec = static_cast<uint32_t>(t.tv_nsec);
-    
+    timespec ts_out;
+    pps::getSystemTime(hardsync_ts, in_use_rising_edge_hardsync_ts_, in_use_rising_edge_system_ts_, ts_out);
+    system_time_out.sec = static_cast<uint32_t>(ts_out.tv_sec);
+    system_time_out.nsec = static_cast<uint32_t>(ts_out.tv_nsec);
     return pps_fetch_ok;
   }
 
   void getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, ros::Time& system_time_out)
   {
-    const double package_time_s_{1e-3 * package_timestamp.time_ms + 1e-9 * package_timestamp.time_ns};
-    const timespec t{pps::getSystemTime(package_time_s_, in_use_rising_edge_package_time_s_, in_use_rising_edge_system_time_)};
-    system_time_out.sec = static_cast<uint32_t>(t.tv_sec);
-    system_time_out.nsec = static_cast<uint32_t>(t.tv_nsec);
+    timespec package_ts, ts_out;
+    getPackageTimespec(package_timestamp, package_ts);
+    pps::getSystemTime(package_ts, in_use_rising_edge_package_ts_, in_use_rising_edge_system_ts_, ts_out);
+    system_time_out.sec = static_cast<uint32_t>(ts_out.tv_sec);
+    system_time_out.nsec = static_cast<uint32_t>(ts_out.tv_nsec);
   }
 
 private:
   pps::Handler pps_handler_;
 
-  timespec last_rising_edge_system_time_;
-  timespec in_use_rising_edge_system_time_;
-  double in_use_rising_edge_hardsync_time_s_;
-  double in_use_rising_edge_package_time_s_;
+  timespec last_rising_edge_system_ts_;
+  timespec in_use_rising_edge_system_ts_;
+  timespec in_use_rising_edge_hardsync_ts_;
+  timespec in_use_rising_edge_package_ts_;
 
   bool pulse_arrived_since_prev_flag_;
+
+  static void getPackageTimespec(const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, timespec& package_ts)
+  {
+    constexpr uint64_t MILLION{1000000};
+    pps::nsecs2timespec(
+      MILLION * static_cast<uint64_t>(package_timestamp.time_ms) + static_cast<uint64_t>(package_timestamp.time_ns),
+      package_ts
+    );
+  }
 
 };
   
