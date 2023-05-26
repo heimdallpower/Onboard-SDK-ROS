@@ -452,6 +452,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
     trigger_publisher = nh.advertise<sensor_msgs::TimeReference>("dji_sdk/trigger_time", 10);
 
+    softsync_400hz_lag_pub = nh.advertise<std_msgs::Int64>("dji_sdk/softsync_400hz_lag_nsec", 10);
+    softsync_sub400hz_lag_pub = nh.advertise<std_msgs::Int64>("dji_sdk/softsync_sub_400hz_lag_nsec", 10);
+
     if (!initDataSubscribeFromFC(nh))
     {
       return false;

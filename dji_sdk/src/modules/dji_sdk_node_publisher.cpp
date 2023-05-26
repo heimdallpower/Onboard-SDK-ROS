@@ -832,6 +832,8 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
 }
 
+#define COMPARE_PPS_AND_SOFSYNC
+
 bool DJISDKNode::get400HzTimestamp
 (
   const Telemetry::SyncTimestamp& hardsyncTimeStamp,
@@ -840,6 +842,7 @@ bool DJISDKNode::get400HzTimestamp
   ros::Time& time_out
 )
 {
+#ifndef COMPARE_PPS_AND_SOFSYNC
   switch (timestamp_select)
   {
     case PPS_SYNC:
@@ -884,6 +887,30 @@ bool DJISDKNode::get400HzTimestamp
       break;
     }
   }
+#else
+  // PPS
+  ros::Time pps_time;
+  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, pps_time)};
+  // Softsync
+  ros::Time softsync_time;
+  const bool softsync_ok{curr_align_state == ALIGNED};
+  if(!softsync_ok)
+    alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
+  else
+    softsync_time = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+
+  // Publish lag
+  const bool ok{pps_ok && softsync_ok};
+  if (ok)
+  {
+    std_msgs::Int64 softsync_lag;
+    softsync_lag.data = (softsync_time - pps_time).toNSec();
+    softsync_400hz_lag_pub.publish(softsync_lag);
+  }
+  // Return PPS time
+  time_out = pps_time;
+  return ok;
+#endif
 }
 
 bool DJISDKNode::getSub400HzTimestamp
@@ -893,6 +920,7 @@ bool DJISDKNode::getSub400HzTimestamp
   ros::Time& time_out
 )
 {
+#ifndef COMPARE_PPS_AND_SOFSYNC
   switch (timestamp_select)
   {
     case PPS_SYNC:
@@ -914,6 +942,24 @@ bool DJISDKNode::getSub400HzTimestamp
       break;
     }
   }
+#else
+  ros::Time pps_time;
+  const bool pps_ok{true};
+  pps_sync_->getSystemTime(packageTimeStamp, pps_time);
+
+  ros::Time softsync_time;
+  const bool softsync_ok{curr_align_state == ALIGNED};
+  softsync_time = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+
+  const bool ok{pps_ok && softsync_ok};
+  if (ok)
+  {
+    std_msgs::Int64 softsync_lag;
+    softsync_lag.data = (softsync_time - pps_time).toNSec();
+    softsync_sub400hz_lag_pub.publish(softsync_lag);
+  }
+  return ok;
+#endif
 }
 
 /*!

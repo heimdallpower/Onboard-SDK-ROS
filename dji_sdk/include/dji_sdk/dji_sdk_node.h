@@ -29,6 +29,7 @@
 #include <std_msgs/UInt8.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int64.h>
 #include <std_msgs/String.h>
 #include <nmea_msgs/Sentence.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -372,6 +373,8 @@ private:
   ros::Publisher baro_height_publisher;
   ros::Publisher battery_state_publisher;
   ros::Publisher trigger_publisher;
+  ros::Publisher softsync_400hz_lag_pub;
+  ros::Publisher softsync_sub400hz_lag_pub;
   ros::Publisher imu_publisher;
   ros::Publisher flight_status_publisher;
   ros::Publisher gps_health_publisher;
