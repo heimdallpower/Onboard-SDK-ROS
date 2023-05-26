@@ -15,34 +15,33 @@ public:
   pulse_arrived_since_prev_flag_{false}
   {}
 
-  bool getSystemTime(const DJI::OSDK::Telemetry::SyncTimestamp& hardsync_timestamp, const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, ros::Time& system_time_out)
+  bool getSystemTime
+  (
+    const DJI::OSDK::Telemetry::SyncTimestamp& hardsync_timestamp,
+    const DJI::OSDK::Telemetry::TimeStamp& package_timestamp,
+    ros::Time& system_time_out
+  )
   {
-    static constexpr uint32_t scaler{static_cast<uint32_t>(2.5e6)};
-    /**
-     * Formula from
-     * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
-    */
-    constexpr uint64_t SCALER{2500000};
-    timespec hardsync_ts;
-    pps::nsecs2timespec(
-      (static_cast<uint64_t>(hardsync_timestamp.time1ns) % SCALER) + (static_cast<uint64_t>(hardsync_timestamp.time2p5ms) * SCALER),
-      hardsync_ts
-    );
-
     bool new_pulse_arrived{false};
     const bool pps_fetch_ok{pps_handler_.getLastRisingEdgeTime(last_rising_edge_system_ts_, new_pulse_arrived)};
     pulse_arrived_since_prev_flag_ |= new_pulse_arrived;
 
     if (hardsync_timestamp.flag && pulse_arrived_since_prev_flag_)
     {
-      ROS_INFO_STREAM("hardsync flag received. time2p5ms    = " << hardsync_timestamp.time2p5ms << ", time1ns = " << hardsync_timestamp.time1ns);
-      ROS_INFO_STREAM("hardsync flag received. hardsync sec = " << hardsync_ts.tv_sec << ", nsec = " << hardsync_ts.tv_nsec);
-      ROS_INFO_STREAM("hardsync flag received. pulse sec    = " << last_rising_edge_system_ts_.tv_sec << ", nsec = " << last_rising_edge_system_ts_.tv_nsec);
       pulse_arrived_since_prev_flag_      = false;
       in_use_rising_edge_system_ts_       = last_rising_edge_system_ts_;
-      in_use_rising_edge_hardsync_ts_     = hardsync_ts;
+
+      getPulseOffsetNs(hardsync_timestamp.time1ns, in_use_pulse_offset_nsecs_);
+      getHardsyncTimespec(hardsync_timestamp.time2p5ms, in_use_rising_edge_hardsync_ts_);
       getPackageTimespec(package_timestamp, in_use_rising_edge_package_ts_);
+
+      ROS_INFO_STREAM("hardsync flag received. time2p5ms    = " << hardsync_timestamp.time2p5ms << ", time1ns = " << hardsync_timestamp.time1ns);
+      ROS_INFO_STREAM("hardsync flag received. hardsync sec = " << in_use_rising_edge_hardsync_ts_.tv_sec << ", nsec = " << in_use_rising_edge_hardsync_ts_.tv_nsec);
+      ROS_INFO_STREAM("hardsync flag received. pulse sec    = " << last_rising_edge_system_ts_.tv_sec << ", nsec = " << last_rising_edge_system_ts_.tv_nsec);
     }
+    timespec hardsync_ts;
+    getHardsyncTimespec(hardsync_timestamp.time2p5ms, hardsync_ts);
+
     timespec ts_out;
     pps::getSystemTime(hardsync_ts, in_use_rising_edge_hardsync_ts_, in_use_rising_edge_system_ts_, ts_out);
     system_time_out.sec = static_cast<uint32_t>(ts_out.tv_sec);
@@ -60,21 +59,45 @@ public:
   }
 
 private:
+  static constexpr uint64_t NSECS_PER_MSEC{1000000};
+  static constexpr uint64_t NSECS_PER_2P5MSECS{2500000};
+
   pps::Handler pps_handler_;
 
   timespec last_rising_edge_system_ts_;
   timespec in_use_rising_edge_system_ts_;
   timespec in_use_rising_edge_hardsync_ts_;
   timespec in_use_rising_edge_package_ts_;
+  uint64_t in_use_pulse_offset_nsecs_;
 
   bool pulse_arrived_since_prev_flag_;
 
   static void getPackageTimespec(const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, timespec& package_ts)
   {
-    constexpr uint64_t MILLION{1000000};
     pps::nsecs2timespec(
-      MILLION * static_cast<uint64_t>(package_timestamp.time_ms), package_ts
+     NSECS_PER_MSEC * static_cast<uint64_t>(package_timestamp.time_ms), package_ts
     );
+  }
+
+  void getHardsyncTimespec(const uint32_t hardsync_time2p5ms, timespec& hardsync_ts) const
+  {
+    /**
+     * Formula from
+     * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
+    */
+    pps::nsecs2timespec(
+      (static_cast<uint64_t>(hardsync_time2p5ms) * NSECS_PER_2P5MSECS) + in_use_pulse_offset_nsecs_,
+      hardsync_ts
+    );
+  }
+
+  static void getPulseOffsetNs(const uint32_t hardsync_time1ns, uint64_t& pulse_offset_nsec)
+  {
+    /**
+     * Formula from
+     * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
+    */
+    pulse_offset_nsec = static_cast<uint64_t>(hardsync_time1ns) % NSECS_PER_2P5MSECS;
   }
 
 };
