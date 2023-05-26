@@ -372,6 +372,13 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   time_sync_pps_source_publisher =
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
 
+  hardsync_debug_publisher =
+      nh.advertise<dji_sdk::HardSyncDebug>("dji_sdk/hardsync_debug", 400);
+  packagetimestamp_sub400Hz_debug_publisher =
+      nh.advertise<dji_sdk::PackageTimestampDebug>("dji_sdk/sub400hz/packagetimestamp_debug", 400);
+  packagetimestamp_400Hz_debug_publisher =
+      nh.advertise<dji_sdk::PackageTimestampDebug>("dji_sdk/400hz/packagetimestamp_debug", 400);
+
 #ifdef ADVANCED_SENSING
   stereo_240p_front_left_publisher =
     nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_front_left_images", 10);

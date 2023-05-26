@@ -50,7 +50,8 @@
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/UInt8Stamped.h>
 #include <dji_sdk/DateTimeStamped.h>
-
+#include <dji_sdk/PackageTimestampDebug.h>
+#include <dji_sdk/HardSyncDebug.h>
 //! mission service
 // missionManager
 #include <dji_sdk/MissionStatus.h>
@@ -410,6 +411,9 @@ private:
   ros::Publisher time_sync_gps_utc_publisher;
   ros::Publisher time_sync_fc_utc_publisher;
   ros::Publisher time_sync_pps_source_publisher;
+  ros::Publisher hardsync_debug_publisher;
+  ros::Publisher packagetimestamp_sub400Hz_debug_publisher;
+  ros::Publisher packagetimestamp_400Hz_debug_publisher;
 
 #ifdef ADVANCED_SENSING
   ros::Publisher stereo_240p_front_left_publisher;
