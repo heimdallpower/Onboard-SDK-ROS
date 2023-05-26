@@ -36,6 +36,7 @@ public:
     if (hardsync_timestamp.flag && pulse_arrived_since_prev_flag_)
     {
       ROS_INFO_STREAM("hardsync flag received. time2p5ms = " << hardsync_timestamp.time2p5ms << ", time1ns = " << hardsync_timestamp.time1ns);
+      ROS_INFO_STREAM("hardsync flag received. pulse sec = " << last_rising_edge_system_ts_.tv_sec << ", nsec = " << last_rising_edge_system_ts_.tv_nsec);
       pulse_arrived_since_prev_flag_      = false;
       in_use_rising_edge_system_ts_       = last_rising_edge_system_ts_;
       in_use_rising_edge_hardsync_ts_     = hardsync_ts;
