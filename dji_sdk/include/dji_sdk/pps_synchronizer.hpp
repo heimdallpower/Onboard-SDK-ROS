@@ -22,10 +22,10 @@ public:
      * Formula from
      * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
     */
-    constexpr uint32_t SCALER{2500000};
+    constexpr uint64_t SCALER{2500000};
     timespec hardsync_ts;
     pps::nsecs2timespec(
-      static_cast<uint64_t>(hardsync_timestamp.time1ns % SCALER) + static_cast<uint64_t>(hardsync_timestamp.time2p5ms * SCALER),
+      (static_cast<uint64_t>(hardsync_timestamp.time1ns) % SCALER) + (static_cast<uint64_t>(hardsync_timestamp.time2p5ms) * SCALER),
       hardsync_ts
     );
 
@@ -72,8 +72,7 @@ private:
   {
     constexpr uint64_t MILLION{1000000};
     pps::nsecs2timespec(
-      MILLION * static_cast<uint64_t>(package_timestamp.time_ms) + static_cast<uint64_t>(package_timestamp.time_ns),
-      package_ts
+      MILLION * static_cast<uint64_t>(package_timestamp.time_ms), package_ts
     );
   }
 
