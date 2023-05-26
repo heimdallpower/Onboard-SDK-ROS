@@ -906,6 +906,17 @@ bool DJISDKNode::get400HzTimestamp
     std_msgs::Int64 softsync_lag;
     softsync_lag.data = (softsync_time - pps_time).toNSec();
     softsync_400hz_lag_pub.publish(softsync_lag);
+
+    dji_sdk::HardSyncDebug hs_dbg;
+    hs_dbg.flag       = hardsyncTimeStamp.flag;
+    hs_dbg.time1ns    = hardsyncTimeStamp.time1ns;
+    hs_dbg.time2p5ms  = hardsyncTimeStamp.time2p5ms;
+    hardsync_debug_publisher.publish(hs_dbg);
+
+    dji_sdk::PackageTimestampDebug pts_dbg;
+    pts_dbg.time_ms = packageTimeStamp.time_ms;
+    pts_dbg.time_ns = packageTimeStamp.time_ns;
+    packagetimestamp_400Hz_debug_publisher.publish(pts_dbg);
   }
   // Return PPS time
   time_out = pps_time;
@@ -957,6 +968,11 @@ bool DJISDKNode::getSub400HzTimestamp
     std_msgs::Int64 softsync_lag;
     softsync_lag.data = (softsync_time - pps_time).toNSec();
     softsync_sub400hz_lag_pub.publish(softsync_lag);
+
+    dji_sdk::PackageTimestampDebug pts_dbg;
+    pts_dbg.time_ms = packageTimeStamp.time_ms;
+    pts_dbg.time_ns = packageTimeStamp.time_ns;
+    packagetimestamp_sub400Hz_debug_publisher.publish(pts_dbg);
   }
   return ok;
 #endif
