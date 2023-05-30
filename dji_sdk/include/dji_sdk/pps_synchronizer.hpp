@@ -3,6 +3,7 @@
 #include <cmath>
 #include <drone_pps/include/drone_pps.hpp>
 #include <dji_telemetry.hpp>
+#include <ros/ros.h>
 
 namespace DJISDK
 {
@@ -12,7 +13,9 @@ class Synchronizer
 public:
   Synchronizer(const std::string& pps_dev_path, pps::Handler::CreationStatus& creation_status_out):
   pps_handler_{pps_dev_path, creation_status_out},
-  pulse_arrived_since_prev_flag_{false}
+  pulse_arrived_since_prev_flag_{false},
+  in_use_pulse_offset_wrapped_nsecs_{0},
+  in_use_pulse_offset_nsec_wraps_nsecs_{0}
   {}
 
   bool getSystemTime
@@ -31,13 +34,16 @@ public:
       pulse_arrived_since_prev_flag_      = false;
       in_use_rising_edge_system_ts_       = last_rising_edge_system_ts_;
 
-      getPulseOffsetNs(hardsync_timestamp.time1ns, in_use_pulse_offset_nsecs_);
+      updateNsecOffsets(hardsync_timestamp.time1ns);
       getHardsyncTimespec(hardsync_timestamp.time2p5ms, in_use_rising_edge_hardsync_ts_);
       getPackageTimespec(package_timestamp, in_use_rising_edge_package_ts_);
 
-      ROS_INFO_STREAM("hardsync flag received. time2p5ms    = " << hardsync_timestamp.time2p5ms << ", time1ns = " << hardsync_timestamp.time1ns);
-      ROS_INFO_STREAM("hardsync flag received. hardsync sec = " << in_use_rising_edge_hardsync_ts_.tv_sec << ", nsec = " << in_use_rising_edge_hardsync_ts_.tv_nsec);
-      ROS_INFO_STREAM("hardsync flag received. pulse sec    = " << last_rising_edge_system_ts_.tv_sec << ", nsec = " << last_rising_edge_system_ts_.tv_nsec);
+      ROS_INFO_STREAM("hardsync flag received");
+      ROS_INFO_STREAM("fc       {time2p5ms: " << hardsync_timestamp.time2p5ms << ", time1ns: " << hardsync_timestamp.time1ns << "}");
+      ROS_INFO_STREAM("us       {in_use_pulse_offset_wrapped_nsecs: " << in_use_pulse_offset_wrapped_nsecs_ << ", in_use_pulse_offset_nsec_wraps_nsecs: " << in_use_pulse_offset_nsec_wraps_nsecs_ / NSECS_PER_2P5MSECS << "}");
+      ROS_INFO_STREAM("hardsync {sec: " << in_use_rising_edge_hardsync_ts_.tv_sec << ", nsec: " << in_use_rising_edge_hardsync_ts_.tv_nsec << "}");
+      ROS_INFO_STREAM("package  {sec: " << in_use_rising_edge_package_ts_.tv_sec << ", nsec: " << in_use_rising_edge_package_ts_.tv_nsec << "}");
+      ROS_INFO_STREAM("pulse    {sec: " << last_rising_edge_system_ts_.tv_sec << ", nsec: " << last_rising_edge_system_ts_.tv_nsec << "}");
     }
     timespec hardsync_ts;
     getHardsyncTimespec(hardsync_timestamp.time2p5ms, hardsync_ts);
@@ -61,6 +67,7 @@ public:
 private:
   static constexpr uint64_t NSECS_PER_MSEC{1000000};
   static constexpr uint64_t NSECS_PER_2P5MSECS{2500000};
+  static constexpr int64_t NSEC_WRAP_THRESHOLD{static_cast<int64_t>(NSECS_PER_2P5MSECS / 2)};
 
   pps::Handler pps_handler_;
 
@@ -68,7 +75,8 @@ private:
   timespec in_use_rising_edge_system_ts_;
   timespec in_use_rising_edge_hardsync_ts_;
   timespec in_use_rising_edge_package_ts_;
-  uint64_t in_use_pulse_offset_nsecs_;
+  uint64_t in_use_pulse_offset_wrapped_nsecs_;
+  uint64_t in_use_pulse_offset_nsec_wraps_nsecs_;
 
   bool pulse_arrived_since_prev_flag_;
 
@@ -86,20 +94,21 @@ private:
      * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
     */
     pps::nsecs2timespec(
-      (static_cast<uint64_t>(hardsync_time2p5ms) * NSECS_PER_2P5MSECS) + in_use_pulse_offset_nsecs_,
+      (static_cast<uint64_t>(hardsync_time2p5ms) * NSECS_PER_2P5MSECS) + in_use_pulse_offset_wrapped_nsecs_ + in_use_pulse_offset_nsec_wraps_nsecs_,
       hardsync_ts
     );
   }
 
-  static void getPulseOffsetNs(const uint32_t hardsync_time1ns, uint64_t& pulse_offset_nsec)
+  void updateNsecOffsets(const uint32_t hardsync_time1ns)
   {
     /**
      * Formula from
      * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
     */
-    pulse_offset_nsec = static_cast<uint64_t>(hardsync_time1ns) % NSECS_PER_2P5MSECS;
+    const uint64_t wrapped_nsecs{static_cast<uint64_t>(hardsync_time1ns) % NSECS_PER_2P5MSECS};
+    in_use_pulse_offset_nsec_wraps_nsecs_   += NSECS_PER_2P5MSECS * (static_cast<int64_t>(in_use_pulse_offset_wrapped_nsecs_) - static_cast<int64_t>(wrapped_nsecs) >= NSEC_WRAP_THRESHOLD);
+    in_use_pulse_offset_wrapped_nsecs_      = wrapped_nsecs;
   }
-
 };
   
 } // namespace DJISDK
