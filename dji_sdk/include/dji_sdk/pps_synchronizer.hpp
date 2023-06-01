@@ -13,101 +13,105 @@ class Synchronizer
 public:
   Synchronizer(const std::string& pps_dev_path, pps::Handler::CreationStatus& creation_status_out):
   pps_handler_{pps_dev_path, creation_status_out},
-  pulse_arrived_since_prev_flag_{false},
-  in_use_pulse_offset_wrapped_nsecs_{0},
-  in_use_pulse_offset_nsec_wraps_nsecs_{0}
+  pulse_arrived_since_prev_flag_{false}
   {}
 
   bool getSystemTime
   (
-    const DJI::OSDK::Telemetry::SyncTimestamp& hardsync_timestamp,
-    const DJI::OSDK::Telemetry::TimeStamp& package_timestamp,
+    const DJI::OSDK::Telemetry::SyncTimestamp& fc_hardsync_stamp,
+    const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp,
     ros::Time& system_time_out
   )
   {
     bool new_pulse_arrived{false};
-    const bool pps_fetch_ok{pps_handler_.getLastRisingEdgeTime(last_rising_edge_system_ts_, new_pulse_arrived)};
+    timespec last_rising_edge_system_time;
+    const bool pps_fetch_ok{pps_handler_.getLastRisingEdgeTime(last_rising_edge_system_time, new_pulse_arrived)};
     pulse_arrived_since_prev_flag_ |= new_pulse_arrived;
 
-    if (hardsync_timestamp.flag && pulse_arrived_since_prev_flag_)
+    timespec fc_time;
+    if (fc_hardsync_stamp.flag && pulse_arrived_since_prev_flag_)
     {
-      pulse_arrived_since_prev_flag_      = false;
-      in_use_rising_edge_system_ts_       = last_rising_edge_system_ts_;
+      pulse_arrived_since_prev_flag_  = false;
+      in_use_rising_edge_time_.system = last_rising_edge_system_time;
 
-      updateNsecOffsets(hardsync_timestamp.time1ns);
-      getHardsyncTimespec(hardsync_timestamp.time2p5ms, in_use_rising_edge_hardsync_ts_);
-      getPackageTimespec(package_timestamp, in_use_rising_edge_package_ts_);
+      getFCTimespec(fc_hardsync_stamp, in_use_rising_edge_time_.fc_hardsync);
+      getFCTimespec(fc_package_stamp, in_use_rising_edge_time_.fc_package);
 
       ROS_INFO_STREAM("hardsync flag received");
-      ROS_INFO_STREAM("fc       {time2p5ms: " << hardsync_timestamp.time2p5ms << ", time1ns: " << hardsync_timestamp.time1ns << "}");
-      ROS_INFO_STREAM("us       {in_use_pulse_offset_wrapped_nsecs: " << in_use_pulse_offset_wrapped_nsecs_ << ", in_use_pulse_offset_nsec_wraps_nsecs: " << in_use_pulse_offset_nsec_wraps_nsecs_ / NSECS_PER_2P5MSECS << "}");
-      ROS_INFO_STREAM("hardsync {sec: " << in_use_rising_edge_hardsync_ts_.tv_sec << ", nsec: " << in_use_rising_edge_hardsync_ts_.tv_nsec << "}");
-      ROS_INFO_STREAM("package  {sec: " << in_use_rising_edge_package_ts_.tv_sec << ", nsec: " << in_use_rising_edge_package_ts_.tv_nsec << "}");
-      ROS_INFO_STREAM("pulse    {sec: " << last_rising_edge_system_ts_.tv_sec << ", nsec: " << last_rising_edge_system_ts_.tv_nsec << "}");
-    }
-    timespec hardsync_ts;
-    getHardsyncTimespec(hardsync_timestamp.time2p5ms, hardsync_ts);
+      ROS_INFO_STREAM("fc_hardsync_stamp                {time2p5ms: " << fc_hardsync_stamp.time2p5ms << ", time1ns: " << fc_hardsync_stamp.time1ns << "}");
+      ROS_INFO_STREAM("fc_package_stamp                 {time_ms: " << fc_package_stamp.time_ms << ", time_ns: " << fc_package_stamp.time_ns << "}");
+      ROS_INFO_STREAM("in_use_rising_edge_time_ hardsync{sec: " << in_use_rising_edge_time_.fc_hardsync.tv_sec << ", nsec: " << in_use_rising_edge_time_.fc_hardsync.tv_nsec << "}");
+      ROS_INFO_STREAM("in_use_rising_edge_time_ package {sec: " << in_use_rising_edge_time_.fc_package.tv_sec << ", nsec: " << in_use_rising_edge_time_.fc_package.tv_nsec << "}");
+      ROS_INFO_STREAM("last_rising_edge_system_time     {sec: " << last_rising_edge_system_time.tv_sec << ", nsec: " << last_rising_edge_system_time.tv_nsec << "}");
 
-    timespec ts_out;
-    pps::getSystemTime(hardsync_ts, in_use_rising_edge_hardsync_ts_, in_use_rising_edge_system_ts_, ts_out);
-    system_time_out.sec = static_cast<uint32_t>(ts_out.tv_sec);
-    system_time_out.nsec = static_cast<uint32_t>(ts_out.tv_nsec);
+      fc_time = in_use_rising_edge_time_.fc_hardsync;
+    }
+    else
+      getFCTimespec(fc_hardsync_stamp, fc_time);
+
+    timespec system_time;
+    pps::getSystemTime(fc_time, in_use_rising_edge_time_.fc_hardsync, in_use_rising_edge_time_.system, system_time);
+    system_time_out.sec   = static_cast<uint32_t>(system_time.tv_sec);
+    system_time_out.nsec  = static_cast<uint32_t>(system_time.tv_nsec);
     return pps_fetch_ok;
   }
 
-  void getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, ros::Time& system_time_out)
+  void getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp, ros::Time& system_time_out)
   {
-    timespec package_ts, ts_out;
-    getPackageTimespec(package_timestamp, package_ts);
-    pps::getSystemTime(package_ts, in_use_rising_edge_package_ts_, in_use_rising_edge_system_ts_, ts_out);
-    system_time_out.sec = static_cast<uint32_t>(ts_out.tv_sec);
-    system_time_out.nsec = static_cast<uint32_t>(ts_out.tv_nsec);
+    timespec fc_time, system_time;
+    getFCTimespec(fc_package_stamp, fc_time);
+    pps::getSystemTime(fc_time, in_use_rising_edge_time_.fc_package, in_use_rising_edge_time_.system, system_time);
+    system_time_out.sec = static_cast<uint32_t>(system_time.tv_sec);
+    system_time_out.nsec = static_cast<uint32_t>(system_time.tv_nsec);
   }
 
 private:
-  static constexpr uint64_t NSECS_PER_MSEC{1000000};
-  static constexpr uint64_t NSECS_PER_2P5MSECS{2500000};
-  static constexpr int64_t NSEC_WRAP_THRESHOLD{static_cast<int64_t>(NSECS_PER_2P5MSECS / 2)};
-
   pps::Handler pps_handler_;
+  struct
+  {
+    timespec system;
+    timespec fc_hardsync;
+    timespec fc_package;
+  } in_use_rising_edge_time_;
 
-  timespec last_rising_edge_system_ts_;
-  timespec in_use_rising_edge_system_ts_;
-  timespec in_use_rising_edge_hardsync_ts_;
-  timespec in_use_rising_edge_package_ts_;
-  uint64_t in_use_pulse_offset_wrapped_nsecs_;
-  uint64_t in_use_pulse_offset_nsec_wraps_nsecs_;
+  struct
+  {
+    uint32_t package_time_ms;
+    uint32_t hardsync_time2p5ms;
+  } prev_fc_;
+  
 
   bool pulse_arrived_since_prev_flag_;
 
-  static void getPackageTimespec(const DJI::OSDK::Telemetry::TimeStamp& package_timestamp, timespec& package_ts)
+  void getFCTimespec(const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp, timespec& fc_package_time)
   {
+    static constexpr uint64_t NSECS_PER_MSEC{1000000};
     pps::nsecs2timespec(
-     NSECS_PER_MSEC * static_cast<uint64_t>(package_timestamp.time_ms), package_ts
+      NSECS_PER_MSEC * getOverflowCompensated(fc_package_stamp.time_ms, prev_fc_.package_time_ms),
+      fc_package_time
     );
+    prev_fc_.package_time_ms = fc_package_stamp.time_ms;
   }
 
-  void getHardsyncTimespec(const uint32_t hardsync_time2p5ms, timespec& hardsync_ts) const
+  void getFCTimespec(const DJI::OSDK::Telemetry::SyncTimestamp& fc_hardsync_stamp, timespec& fc_hardsync_time)
   {
-    /**
-     * Formula from
-     * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
-    */
+    static constexpr uint64_t NSECS_PER_2P5MSECS{2500000};
     pps::nsecs2timespec(
-      (static_cast<uint64_t>(hardsync_time2p5ms) * NSECS_PER_2P5MSECS) + in_use_pulse_offset_wrapped_nsecs_ + in_use_pulse_offset_nsec_wraps_nsecs_,
-      hardsync_ts
+      NSECS_PER_2P5MSECS * getOverflowCompensated(fc_hardsync_stamp.time2p5ms, prev_fc_.hardsync_time2p5ms),
+      fc_hardsync_time
     );
+    prev_fc_.hardsync_time2p5ms = fc_hardsync_stamp.time2p5ms;
   }
 
-  void updateNsecOffsets(const uint32_t hardsync_time1ns)
+  static uint64_t getOverflowCompensated(
+    const uint32_t curr,
+    const uint32_t prev
+  )
   {
-    /**
-     * Formula from
-     * @ref https://developer.dji.com/onboard-sdk/documentation/guides/component-guide-hardware-sync.html
-    */
-    const uint64_t wrapped_nsecs{static_cast<uint64_t>(hardsync_time1ns) % NSECS_PER_2P5MSECS};
-    in_use_pulse_offset_nsec_wraps_nsecs_   += NSECS_PER_2P5MSECS * (static_cast<int64_t>(in_use_pulse_offset_wrapped_nsecs_) - static_cast<int64_t>(wrapped_nsecs) >= NSEC_WRAP_THRESHOLD);
-    in_use_pulse_offset_wrapped_nsecs_      = wrapped_nsecs;
+    const uint64_t overflow{curr < prev};
+    const uint64_t out{static_cast<uint64_t>(curr) + overflow * (static_cast<uint64_t>((std::numeric_limits<uint32_t>::max() - prev)) + 1ul)};
+    ROS_INFO_STREAM_COND(overflow, "[overflow] {prev: " << prev << ", curr: " << curr << "} -> out: " << out);
+    return out;
   }
 };
   
