@@ -80,7 +80,6 @@ private:
     uint32_t hardsync_time2p5ms;
   } prev_fc_;
   
-
   bool pulse_arrived_since_prev_flag_;
 
   void getFCTimespec(const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp, timespec& fc_package_time)
