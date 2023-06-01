@@ -18,53 +18,53 @@ public:
 
   bool getSystemTime
   (
-    const DJI::OSDK::Telemetry::SyncTimestamp& fc_hardsync_stamp,
-    const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp,
-    ros::Time& system_time_out
+    const DJI::OSDK::Telemetry::SyncTimestamp& stamp_HARDSYNC_FC,
+    const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC,
+    ros::Time& time_SYSTEM_out
   )
   {
     bool new_pulse_arrived{false};
-    timespec last_rising_edge_system_time;
-    const bool pps_fetch_ok{pps_handler_.getLastRisingEdgeTime(last_rising_edge_system_time, new_pulse_arrived)};
+    timespec last_rising_edge_time_SYSTEM;
+    const bool pps_fetch_ok{pps_handler_.getLastRisingEdgeTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
     pulse_arrived_since_prev_flag_ |= new_pulse_arrived;
 
-    timespec fc_time;
-    if (fc_hardsync_stamp.flag && pulse_arrived_since_prev_flag_)
+    timespec time_HARDSYNC_FC;
+    if (stamp_HARDSYNC_FC.flag && pulse_arrived_since_prev_flag_)
     {
       pulse_arrived_since_prev_flag_  = false;
-      in_use_rising_edge_time_.system = last_rising_edge_system_time;
+      in_use_rising_edge_time_.SYSTEM = last_rising_edge_time_SYSTEM;
 
-      getFCTimespec(fc_hardsync_stamp, in_use_rising_edge_time_.fc_hardsync);
-      getFCTimespec(fc_package_stamp, in_use_rising_edge_time_.fc_package);
+      getFCTimespec(stamp_HARDSYNC_FC, in_use_rising_edge_time_.HARDSYNC_FC);
+      getFCTimespec(stamp_PACKAGE_FC, in_use_rising_edge_time_.PACKAGE_FC);
 
-      fc_time = in_use_rising_edge_time_.fc_hardsync;
+      time_HARDSYNC_FC = in_use_rising_edge_time_.HARDSYNC_FC;
     }
     else
-      getFCTimespec(fc_hardsync_stamp, fc_time);
+      getFCTimespec(stamp_HARDSYNC_FC, time_HARDSYNC_FC);
 
-    timespec system_time;
-    pps::getSystemTime(fc_time, in_use_rising_edge_time_.fc_hardsync, in_use_rising_edge_time_.system, system_time);
-    system_time_out.sec   = static_cast<uint32_t>(system_time.tv_sec);
-    system_time_out.nsec  = static_cast<uint32_t>(system_time.tv_nsec);
+    timespec time_SYSTEM;
+    pps::getSystemTime(time_HARDSYNC_FC, in_use_rising_edge_time_.HARDSYNC_FC, in_use_rising_edge_time_.SYSTEM, time_SYSTEM);
+    time_SYSTEM_out.sec   = static_cast<uint32_t>(time_SYSTEM.tv_sec);
+    time_SYSTEM_out.nsec  = static_cast<uint32_t>(time_SYSTEM.tv_nsec);
     return pps_fetch_ok;
   }
 
-  void getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp, ros::Time& system_time_out)
+  void getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC, ros::Time& time_SYSTEM_out)
   {
-    timespec fc_time, system_time;
-    getFCTimespec(fc_package_stamp, fc_time);
-    pps::getSystemTime(fc_time, in_use_rising_edge_time_.fc_package, in_use_rising_edge_time_.system, system_time);
-    system_time_out.sec   = static_cast<uint32_t>(system_time.tv_sec);
-    system_time_out.nsec  = static_cast<uint32_t>(system_time.tv_nsec);
+    timespec time_PACKAGE_FC, time_SYSTEM;
+    getFCTimespec(stamp_PACKAGE_FC, time_PACKAGE_FC);
+    pps::getSystemTime(time_PACKAGE_FC, in_use_rising_edge_time_.PACKAGE_FC, in_use_rising_edge_time_.SYSTEM, time_SYSTEM);
+    time_SYSTEM_out.sec   = static_cast<uint32_t>(time_SYSTEM.tv_sec);
+    time_SYSTEM_out.nsec  = static_cast<uint32_t>(time_SYSTEM.tv_nsec);
   }
 
 private:
   pps::Handler pps_handler_;
   struct
   {
-    timespec system;
-    timespec fc_hardsync;
-    timespec fc_package;
+    timespec SYSTEM;
+    timespec HARDSYNC_FC;
+    timespec PACKAGE_FC;
   } in_use_rising_edge_time_;
 
   struct
@@ -75,7 +75,7 @@ private:
   
   bool pulse_arrived_since_prev_flag_;
 
-  void getFCTimespec(const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp, timespec& fc_package_time)
+  void getFCTimespec(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC, timespec& time_PACKAGE_FC)
   {
     /**
      * NOTE: after checking, it is evident that the field named 'time_ns' in the DJI::OSDK::Telemetry::TimeStamp-
@@ -86,20 +86,20 @@ private:
     */
     static constexpr uint64_t NSECS_PER_USEC{1000};
     pps::nsecs2timespec(
-      NSECS_PER_USEC * getOverflowCompensated(fc_package_stamp.time_ns, prev_fc_.package_time_us),
-      fc_package_time
+      NSECS_PER_USEC * getOverflowCompensated(stamp_PACKAGE_FC.time_ns, prev_fc_.package_time_us),
+      time_PACKAGE_FC
     );
-    prev_fc_.package_time_us = fc_package_stamp.time_ns;
+    prev_fc_.package_time_us = stamp_PACKAGE_FC.time_ns;
   }
 
-  void getFCTimespec(const DJI::OSDK::Telemetry::SyncTimestamp& fc_hardsync_stamp, timespec& fc_hardsync_time)
+  void getFCTimespec(const DJI::OSDK::Telemetry::SyncTimestamp& stamp_HARDSYNC_FC, timespec& time_HARDSYNC_FC)
   {
     static constexpr uint64_t NSECS_PER_2P5MSECS{2500000};
     pps::nsecs2timespec(
-      NSECS_PER_2P5MSECS * getOverflowCompensated(fc_hardsync_stamp.time2p5ms, prev_fc_.hardsync_time2p5ms),
-      fc_hardsync_time
+      NSECS_PER_2P5MSECS * getOverflowCompensated(stamp_HARDSYNC_FC.time2p5ms, prev_fc_.hardsync_time2p5ms),
+      time_HARDSYNC_FC
     );
-    prev_fc_.hardsync_time2p5ms = fc_hardsync_stamp.time2p5ms;
+    prev_fc_.hardsync_time2p5ms = stamp_HARDSYNC_FC.time2p5ms;
   }
 
   static uint64_t getOverflowCompensated(
