@@ -33,13 +33,7 @@ public:
     {
       pulse_arrived_  = false;
       in_use_rising_edge_time_.SYSTEM = last_rising_edge_time_SYSTEM;
-
       getFCTimespec(stamp_FC, in_use_rising_edge_time_.FC);
-
-      ROS_INFO_STREAM("hardsync flag received");
-      ROS_INFO_STREAM("stamp_FC                         {time_ms: " << stamp_FC.time_ms << ", time_ns: " << stamp_FC.time_ns << "}");
-      ROS_INFO_STREAM("in_use_rising_edge_time_ package {sec: " << in_use_rising_edge_time_.FC.tv_sec << ", nsec: " << in_use_rising_edge_time_.FC.tv_nsec << "}");
-      ROS_INFO_STREAM("last_rising_edge_time_SYSTEM     {sec: " << last_rising_edge_time_SYSTEM.tv_sec << ", nsec: " << last_rising_edge_time_SYSTEM.tv_nsec << "}");
     }
     getSystemTime(stamp_FC, time_SYSTEM_out);
     return pps_fetch_ok;
@@ -89,7 +83,6 @@ private:
   {
     const uint64_t overflow{curr < prev};
     const uint64_t out{static_cast<uint64_t>(curr) + overflow * (static_cast<uint64_t>((std::numeric_limits<uint32_t>::max() - prev)) + 1ul)};
-    ROS_INFO_STREAM_COND(overflow, "[overflow] {prev: " << prev << ", curr: " << curr << "} -> out: " << out);
     return out;
   }
 };
