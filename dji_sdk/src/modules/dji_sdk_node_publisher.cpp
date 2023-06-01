@@ -847,7 +847,7 @@ bool DJISDKNode::get400HzTimestamp
   {
     case PPS_SYNC:
     {
-      ROS_WARN_STREAM_COND(!pps_sync_->getSystemTime(hardsyncTimeStamp.flag, packageTimeStamp, time_out),
+      ROS_WARN_STREAM_COND(!pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out),
         "[dji_sdk] Could not update system base time through PPS."
       );
       if (hardsyncTimeStamp.flag)
