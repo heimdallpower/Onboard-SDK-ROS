@@ -76,7 +76,7 @@ private:
 
   struct
   {
-    uint32_t package_time_ms;
+    uint32_t package_time_us;
     uint32_t hardsync_time2p5ms;
   } prev_fc_;
   
@@ -84,12 +84,19 @@ private:
 
   void getFCTimespec(const DJI::OSDK::Telemetry::TimeStamp& fc_package_stamp, timespec& fc_package_time)
   {
-    static constexpr uint64_t NSECS_PER_MSEC{1000000};
+    /**
+     * NOTE: after checking, it is evident that the field named 'time_ns' in the DJI::OSDK::Telemetry::TimeStamp-
+     * struct contains a _micro_ second offset, not a _nano_ second offset. This has been found by 
+     * comparing 1000000 * DJI::OSDK::Telemetry::TimeStamp::time_ms field to 1000 * DJI::OSDK::Telemetry::TimeStamp::time_ns field.
+     * Both yield pretty much the same output, but DJI::OSDK::Telemetry::TimeStamp::time_ns has some added precision and is
+     * thus used.
+    */
+    static constexpr uint64_t NSECS_PER_USEC{1000};
     pps::nsecs2timespec(
-      NSECS_PER_MSEC * getOverflowCompensated(fc_package_stamp.time_ms, prev_fc_.package_time_ms),
+      NSECS_PER_USEC * getOverflowCompensated(fc_package_stamp.time_ms, prev_fc_.package_time_us),
       fc_package_time
     );
-    prev_fc_.package_time_ms = fc_package_stamp.time_ms;
+    prev_fc_.package_time_us = fc_package_stamp.time_ms;
   }
 
   void getFCTimespec(const DJI::OSDK::Telemetry::SyncTimestamp& fc_hardsync_stamp, timespec& fc_hardsync_time)
