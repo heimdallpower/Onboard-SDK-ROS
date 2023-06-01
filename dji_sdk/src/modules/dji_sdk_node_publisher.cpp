@@ -976,6 +976,7 @@ bool DJISDKNode::getSub400HzTimestamp
     pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
     packagetimestamp_sub400Hz_debug_publisher.publish(pts_dbg);
   }
+  time_out = pps_time;
   return ok;
 #endif
 }
