@@ -903,19 +903,21 @@ bool DJISDKNode::get400HzTimestamp
   const bool ok{pps_ok && softsync_ok};
   if (ok)
   {
-    std_msgs::Int64 softsync_lag;
+    dji_sdk::Int64Stamped softsync_lag;
     softsync_lag.data = (softsync_time - pps_time).toNSec();
     softsync_400hz_lag_pub.publish(softsync_lag);
 
-    dji_sdk::HardSyncDebug hs_dbg;
-    hs_dbg.flag       = hardsyncTimeStamp.flag;
-    hs_dbg.time1ns    = hardsyncTimeStamp.time1ns;
-    hs_dbg.time2p5ms  = hardsyncTimeStamp.time2p5ms;
+    dji_sdk::HardSyncDebugStamped hs_dbg;
+    hs_dbg.header.stamp                   = pps_time;
+    hs_dbg.hardsync_timestamp.flag        = hardsyncTimeStamp.flag;
+    hs_dbg.hardsync_timestamp.time1ns     = hardsyncTimeStamp.time1ns;
+    hs_dbg.hardsync_timestamp.time2p5ms   = hardsyncTimeStamp.time2p5ms;
     hardsync_debug_publisher.publish(hs_dbg);
 
-    dji_sdk::PackageTimestampDebug pts_dbg;
-    pts_dbg.time_ms = packageTimeStamp.time_ms;
-    pts_dbg.time_ns = packageTimeStamp.time_ns;
+    dji_sdk::PackageTimestampDebugStamped pts_dbg;
+    pts_dbg.header.stamp              = pps_time;
+    pts_dbg.package_timestamp.time_ms = packageTimeStamp.time_ms;
+    pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
     packagetimestamp_400Hz_debug_publisher.publish(pts_dbg);
   }
   // Return PPS time
@@ -965,13 +967,14 @@ bool DJISDKNode::getSub400HzTimestamp
   const bool ok{pps_ok && softsync_ok};
   if (ok)
   {
-    std_msgs::Int64 softsync_lag;
+    dji_sdk::Int64Stamped softsync_lag;
     softsync_lag.data = (softsync_time - pps_time).toNSec();
     softsync_sub400hz_lag_pub.publish(softsync_lag);
 
-    dji_sdk::PackageTimestampDebug pts_dbg;
-    pts_dbg.time_ms = packageTimeStamp.time_ms;
-    pts_dbg.time_ns = packageTimeStamp.time_ns;
+    dji_sdk::PackageTimestampDebugStamped pts_dbg;
+    pts_dbg.header.stamp              = pps_time;
+    pts_dbg.package_timestamp.time_ms = packageTimeStamp.time_ms;
+    pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
     packagetimestamp_sub400Hz_debug_publisher.publish(pts_dbg);
   }
   return ok;

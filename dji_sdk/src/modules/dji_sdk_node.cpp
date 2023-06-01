@@ -373,11 +373,11 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
 
   hardsync_debug_publisher =
-      nh.advertise<dji_sdk::HardSyncDebug>("dji_sdk/hardsync_debug", 400);
+      nh.advertise<dji_sdk::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);
   packagetimestamp_sub400Hz_debug_publisher =
-      nh.advertise<dji_sdk::PackageTimestampDebug>("dji_sdk/packagetimestamp_debug/sub400hz", 400);
+      nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/sub400hz", 400);
   packagetimestamp_400Hz_debug_publisher =
-      nh.advertise<dji_sdk::PackageTimestampDebug>("dji_sdk/packagetimestamp_debug/400hz", 400);
+      nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/400hz", 400);
 
 #ifdef ADVANCED_SENSING
   stereo_240p_front_left_publisher =
@@ -459,8 +459,8 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
     trigger_publisher = nh.advertise<sensor_msgs::TimeReference>("dji_sdk/trigger_time", 10);
 
-    softsync_400hz_lag_pub = nh.advertise<std_msgs::Int64>("dji_sdk/softsync_400hz_lag_nsec", 10);
-    softsync_sub400hz_lag_pub = nh.advertise<std_msgs::Int64>("dji_sdk/softsync_sub_400hz_lag_nsec", 10);
+    softsync_400hz_lag_pub = nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_400hz_lag_nsec", 10);
+    softsync_sub400hz_lag_pub = nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_sub_400hz_lag_nsec", 10);
 
     if (!initDataSubscribeFromFC(nh))
     {

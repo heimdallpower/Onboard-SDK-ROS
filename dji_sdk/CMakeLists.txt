@@ -82,6 +82,7 @@ add_message_files(
   MissionHotpointTask.msg
   FlightAnomaly.msg
   UInt8Stamped.msg
+  Int64Stamped.msg
   VOPosition.msg
   RTKYaw.msg
   RTKPosition.msg
@@ -90,7 +91,9 @@ add_message_files(
   GPSRaw.msg
   BaroHeight.msg
   HardSyncDebug.msg
+  HardSyncDebugStamped.msg
   PackageTimestampDebug.msg
+  PackageTimestampDebugStamped.msg
 )
 
 ## Generate services in the 'srv' folder

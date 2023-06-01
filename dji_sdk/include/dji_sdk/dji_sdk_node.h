@@ -29,7 +29,6 @@
 #include <std_msgs/UInt8.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Float32.h>
-#include <std_msgs/Int64.h>
 #include <std_msgs/String.h>
 #include <nmea_msgs/Sentence.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -49,9 +48,10 @@
 #include <dji_sdk/GPSRaw.h>
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/UInt8Stamped.h>
+#include <dji_sdk/Int64Stamped.h>
 #include <dji_sdk/DateTimeStamped.h>
-#include <dji_sdk/PackageTimestampDebug.h>
-#include <dji_sdk/HardSyncDebug.h>
+#include <dji_sdk/PackageTimestampDebugStamped.h>
+#include <dji_sdk/HardSyncDebugStamped.h>
 //! mission service
 // missionManager
 #include <dji_sdk/MissionStatus.h>
