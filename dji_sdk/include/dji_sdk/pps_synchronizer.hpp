@@ -93,10 +93,10 @@ private:
     */
     static constexpr uint64_t NSECS_PER_USEC{1000};
     pps::nsecs2timespec(
-      NSECS_PER_USEC * getOverflowCompensated(fc_package_stamp.time_ms, prev_fc_.package_time_us),
+      NSECS_PER_USEC * getOverflowCompensated(fc_package_stamp.time_ns, prev_fc_.package_time_us),
       fc_package_time
     );
-    prev_fc_.package_time_us = fc_package_stamp.time_ms;
+    prev_fc_.package_time_us = fc_package_stamp.time_ns;
   }
 
   void getFCTimespec(const DJI::OSDK::Telemetry::SyncTimestamp& fc_hardsync_stamp, timespec& fc_hardsync_time)
