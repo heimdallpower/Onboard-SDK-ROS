@@ -847,7 +847,7 @@ bool DJISDKNode::get400HzTimestamp
   {
     case PPS_SYNC:
     {
-      if (!pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out))
+      if (!pps_sync_->getSystemTime(hardsyncTimeStamp.flag != 0, packageTimeStamp, time_out))
         return false;
 
       if (hardsyncTimeStamp.flag)
@@ -890,7 +890,7 @@ bool DJISDKNode::get400HzTimestamp
 #else
   // PPS
   ros::Time pps_time;
-  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, pps_time)};
+  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp.flag != 0, packageTimeStamp, pps_time)};
   // Softsync
   ros::Time softsync_time;
   const bool softsync_ok{curr_align_state == ALIGNED};
