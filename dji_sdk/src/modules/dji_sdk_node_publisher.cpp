@@ -904,7 +904,8 @@ bool DJISDKNode::get400HzTimestamp
   if (ok)
   {
     dji_sdk::Int64Stamped softsync_lag;
-    softsync_lag.data = (softsync_time - pps_time).toNSec();
+    softsync_lag.header.stamp = pps_time;
+    softsync_lag.data         = (softsync_time - pps_time).toNSec();
     softsync_400hz_lag_pub.publish(softsync_lag);
 
     dji_sdk::HardSyncDebugStamped hs_dbg;
@@ -968,7 +969,8 @@ bool DJISDKNode::getSub400HzTimestamp
   if (ok)
   {
     dji_sdk::Int64Stamped softsync_lag;
-    softsync_lag.data = (softsync_time - pps_time).toNSec();
+    softsync_lag.header.stamp = pps_time;
+    softsync_lag.data         = (softsync_time - pps_time).toNSec();
     softsync_sub400hz_lag_pub.publish(softsync_lag);
 
     dji_sdk::PackageTimestampDebugStamped pts_dbg;
