@@ -832,7 +832,7 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
 }
 
-#define COMPARE_PPS_AND_SOFSYNC
+// #define COMPARE_PPS_AND_SOFSYNC
 
 bool DJISDKNode::get400HzTimestamp
 (
@@ -847,9 +847,9 @@ bool DJISDKNode::get400HzTimestamp
   {
     case PPS_SYNC:
     {
-      if (!pps_sync_->getSystemTime(hardsyncTimeStamp.flag != 0, packageTimeStamp, time_out))
-        return false;
-
+      ROS_WARN_STREAM_COND(!pps_sync_->getSystemTime(hardsyncTimeStamp.flag, packageTimeStamp, time_out),
+        "[dji_sdk] Could not update system base time through PPS."
+      );
       if (hardsyncTimeStamp.flag)
       {
         sensor_msgs::TimeReference trigTime;
@@ -890,7 +890,7 @@ bool DJISDKNode::get400HzTimestamp
 #else
   // PPS
   ros::Time pps_time;
-  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp.flag != 0, packageTimeStamp, pps_time)};
+  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp.flag, packageTimeStamp, pps_time)};
   // Softsync
   ros::Time softsync_time;
   const bool softsync_ok{curr_align_state == ALIGNED};
