@@ -61,8 +61,8 @@ public:
     timespec fc_time, system_time;
     getFCTimespec(fc_package_stamp, fc_time);
     pps::getSystemTime(fc_time, in_use_rising_edge_time_.fc_package, in_use_rising_edge_time_.system, system_time);
-    system_time_out.sec = static_cast<uint32_t>(system_time.tv_sec);
-    system_time_out.nsec = static_cast<uint32_t>(system_time.tv_nsec);
+    system_time_out.sec   = static_cast<uint32_t>(system_time.tv_sec);
+    system_time_out.nsec  = static_cast<uint32_t>(system_time.tv_nsec);
   }
 
 private:
