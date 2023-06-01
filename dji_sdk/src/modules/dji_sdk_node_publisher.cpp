@@ -832,7 +832,7 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
 }
 
-// #define COMPARE_PPS_AND_SOFSYNC
+#define COMPARE_PPS_AND_SOFSYNC
 
 bool DJISDKNode::get400HzTimestamp
 (
@@ -858,7 +858,6 @@ bool DJISDKNode::get400HzTimestamp
         trigTime.time_ref     = now_time;
         trigger_publisher.publish(trigTime);
       }
-      return true;
     }
     case SOFT_SYNC:
     {
@@ -877,20 +876,19 @@ bool DJISDKNode::get400HzTimestamp
         trigTime.time_ref     = now_time;
         trigger_publisher.publish(trigTime);
       }
-      return true;
       break;
     }
     default:
     {
       time_out = now_time;
-      return true;
       break;
     }
   }
+  return true;
 #else
   // PPS
   ros::Time pps_time;
-  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp.flag, packageTimeStamp, pps_time)};
+  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, pps_time)};
   // Softsync
   ros::Time softsync_time;
   const bool softsync_ok{curr_align_state == ALIGNED};
@@ -940,7 +938,6 @@ bool DJISDKNode::getSub400HzTimestamp
     case PPS_SYNC:
     {
       pps_sync_->getSystemTime(packageTimeStamp, time_out);
-      return true;
       break;
     }
     case SOFT_SYNC:
@@ -952,10 +949,10 @@ bool DJISDKNode::getSub400HzTimestamp
     default:
     {
       time_out = now_time;
-      return true;
       break;
     }
   }
+  return true;
 #else
   ros::Time pps_time;
   const bool pps_ok{true};
