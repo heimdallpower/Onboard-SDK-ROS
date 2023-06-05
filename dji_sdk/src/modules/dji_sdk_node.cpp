@@ -56,7 +56,6 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     ros::shutdown();
     return;
   }
-  vehicle->hardSync->setSyncFreq(1ul);
 
   std::string pps_device_path;
   if (!nh_private.getParam("pps_device", pps_device_path))
@@ -68,6 +67,8 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
 
   if (pps_device_path != "")
   {
+    vehicle->hardSync->setSyncFreq(1ul);
+    
     pps::Handler::CreationStatus pps_creation_status{pps::Handler::CreationStatus::OK};
     pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
       pps_device_path,
