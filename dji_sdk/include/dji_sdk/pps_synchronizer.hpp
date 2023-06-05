@@ -13,6 +13,7 @@ class Synchronizer
 public:
   Synchronizer(const std::string& pps_dev_path, pps::Handler::CreationStatus& creation_status_out):
   pps_handler_{pps_dev_path, creation_status_out},
+  alignment_exists_{false},
   pulse_arrived_since_prev_flag_{false}
   {}
 
@@ -29,8 +30,9 @@ public:
     pulse_arrived_since_prev_flag_ |= new_pulse_arrived;
 
     timespec time_HARDSYNC_FC;
-    if (stamp_HARDSYNC_FC.flag && pulse_arrived_since_prev_flag_)
+    if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && pulse_arrived_since_prev_flag_)
     {
+      alignment_exists_               = true;
       pulse_arrived_since_prev_flag_  = false;
       in_use_rising_edge_time_.SYSTEM = last_rising_edge_time_SYSTEM;
 
@@ -46,16 +48,17 @@ public:
     pps::getSystemTime(time_HARDSYNC_FC, in_use_rising_edge_time_.HARDSYNC_FC, in_use_rising_edge_time_.SYSTEM, time_SYSTEM);
     time_SYSTEM_out.sec   = static_cast<uint32_t>(time_SYSTEM.tv_sec);
     time_SYSTEM_out.nsec  = static_cast<uint32_t>(time_SYSTEM.tv_nsec);
-    return pps_fetch_ok;
+    return alignment_exists_;
   }
 
-  void getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC, ros::Time& time_SYSTEM_out)
+  bool getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC, ros::Time& time_SYSTEM_out)
   {
     timespec time_PACKAGE_FC, time_SYSTEM;
     getFCTimespec(stamp_PACKAGE_FC, time_PACKAGE_FC);
     pps::getSystemTime(time_PACKAGE_FC, in_use_rising_edge_time_.PACKAGE_FC, in_use_rising_edge_time_.SYSTEM, time_SYSTEM);
     time_SYSTEM_out.sec   = static_cast<uint32_t>(time_SYSTEM.tv_sec);
     time_SYSTEM_out.nsec  = static_cast<uint32_t>(time_SYSTEM.tv_nsec);
+    return alignment_exists_;
   }
 
 private:
@@ -73,6 +76,7 @@ private:
     uint32_t hardsync_time2p5ms;
   } prev_fc_;
   
+  bool alignment_exists_;
   bool pulse_arrived_since_prev_flag_;
 
   void getFCTimespec(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC, timespec& time_PACKAGE_FC)
