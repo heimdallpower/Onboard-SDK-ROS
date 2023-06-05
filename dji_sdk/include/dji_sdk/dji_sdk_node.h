@@ -12,6 +12,8 @@
 #ifndef DJI_SDK_NODE_MAIN_H
 #define DJI_SDK_NODE_MAIN_H
 
+// #define COMPARE_PPS_AND_SOFSYNC
+
 //! ROS
 #include <ros/ros.h>
 #include <tf/tf.h>
@@ -48,10 +50,12 @@
 #include <dji_sdk/GPSRaw.h>
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/UInt8Stamped.h>
-#include <dji_sdk/Int64Stamped.h>
 #include <dji_sdk/DateTimeStamped.h>
+#ifdef COMPARE_PPS_AND_SOFSYNC
+#include <dji_sdk/Int64Stamped.h>
 #include <dji_sdk/PackageTimestampDebugStamped.h>
 #include <dji_sdk/HardSyncDebugStamped.h>
+#endif
 //! mission service
 // missionManager
 #include <dji_sdk/MissionStatus.h>
@@ -374,8 +378,6 @@ private:
   ros::Publisher baro_height_publisher;
   ros::Publisher battery_state_publisher;
   ros::Publisher trigger_publisher;
-  ros::Publisher softsync_400hz_lag_pub;
-  ros::Publisher softsync_sub400hz_lag_pub;
   ros::Publisher imu_publisher;
   ros::Publisher flight_status_publisher;
   ros::Publisher gps_health_publisher;
@@ -411,9 +413,14 @@ private:
   ros::Publisher time_sync_gps_utc_publisher;
   ros::Publisher time_sync_fc_utc_publisher;
   ros::Publisher time_sync_pps_source_publisher;
+
+#ifdef COMPARE_PPS_AND_SOFSYNC
   ros::Publisher hardsync_debug_publisher;
   ros::Publisher packagetimestamp_sub400Hz_debug_publisher;
   ros::Publisher packagetimestamp_400Hz_debug_publisher;
+  ros::Publisher softsync_400hz_lag_pub;
+  ros::Publisher softsync_sub400hz_lag_pub;
+#endif
 
 #ifdef ADVANCED_SENSING
   ros::Publisher stereo_240p_front_left_publisher;

@@ -832,8 +832,6 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
 }
 
-// #define COMPARE_PPS_AND_SOFSYNC
-
 bool DJISDKNode::get400HzTimestamp
 (
   const Telemetry::SyncTimestamp& hardsyncTimeStamp,

@@ -68,7 +68,7 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
   if (pps_device_path != "")
   {
     vehicle->hardSync->setSyncFreq(1ul);
-    
+
     pps::Handler::CreationStatus pps_creation_status{pps::Handler::CreationStatus::OK};
     pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
       pps_device_path,
@@ -373,6 +373,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   time_sync_pps_source_publisher =
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
 
+#ifdef COMPARE_PPS_AND_SOFSYNC
   hardsync_debug_publisher =
       nh.advertise<dji_sdk::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);
   
@@ -387,7 +388,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   
   softsync_sub400hz_lag_pub =
     nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_sub_400hz_lag_nsec", 400);
-
+#endif
 #ifdef ADVANCED_SENSING
   stereo_240p_front_left_publisher =
     nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_front_left_images", 10);
