@@ -890,7 +890,7 @@ void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t t
   {
     static int aligned_count = 0;
     static int retry_count = 0;
-    constexpr int MAX_RETRIES = 100;
+    constexpr int MAX_RETRIES = 200;
     ROS_INFO_THROTTLE(1.0, "[dji_sdk] Aligning time...");
 
     double dt = std::fabs((now_time - (base_time + _TICK2ROSTIME(tick))).toSec());
