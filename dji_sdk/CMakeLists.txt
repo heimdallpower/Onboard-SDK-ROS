@@ -82,6 +82,7 @@ add_message_files(
   MissionHotpointTask.msg
   FlightAnomaly.msg
   UInt8Stamped.msg
+  UInt32Stamped.msg
   VOPosition.msg
   RTKYaw.msg
   RTKPosition.msg

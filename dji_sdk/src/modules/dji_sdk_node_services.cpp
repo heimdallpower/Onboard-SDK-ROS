@@ -112,6 +112,16 @@ DJISDKNode::sdkCtrlAuthorityCallback(
   {
     response.result = false;
     ACK::getErrorCodeMessage(ack, __func__);
+
+    dji_sdk::UInt32Stamped error_msg;
+    error_msg.header.stamp = ros::Time::now();
+    error_msg.data = ack.data;
+    control_authority_error_publisher.publish(error_msg);
+
+    ROS_ERROR(
+      "[dji_sdk] Control authority error: %s",
+      controlAuthorityErrorString(ack.data).c_str()
+    );
   }
   else
   {
