@@ -48,6 +48,7 @@
 #include <dji_sdk/GPSRaw.h>
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/UInt8Stamped.h>
+#include <dji_sdk/UInt32Stamped.h>
 #include <dji_sdk/DateTimeStamped.h>
 
 //! mission service
@@ -404,6 +405,8 @@ private:
   ros::Publisher time_sync_gps_utc_publisher;
   ros::Publisher time_sync_fc_utc_publisher;
   ros::Publisher time_sync_pps_source_publisher;
+  //! SDK control authority request ack data publisher
+  ros::Publisher control_authority_ack_publisher;
 
 #ifdef ADVANCED_SENSING
   ros::Publisher stereo_240p_front_left_publisher;
@@ -469,6 +472,7 @@ private:
   void gpsConvertENU(double &ENU_x, double &ENU_y,
                      double gps_t_lon, double gps_t_lat,
                      double gps_r_lon, double gps_r_lat);
+  std::string controlAuthorityErrorString(const uint32_t error_code);
 
   double local_pos_ref_latitude, local_pos_ref_longitude, local_pos_ref_altitude;
   double current_gps_latitude, current_gps_longitude, current_gps_altitude;
