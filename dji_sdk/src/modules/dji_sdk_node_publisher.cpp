@@ -899,7 +899,7 @@ void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t t
     {
       aligned_count++;
     }
-    else if(aligned_count > 0)
+    else
     {
       base_time = now_time - _TICK2ROSTIME(tick);
       ROS_INFO("[dji_sdk] ***** Time difference out of bound after %d samples, retried %d times, dt=%.3f... *****",
