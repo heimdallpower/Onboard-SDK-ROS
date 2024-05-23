@@ -843,8 +843,7 @@ bool DJISDKNode::get400HzTimestamp
 #ifndef COMPARE_PPS_AND_SOFSYNC
   switch (timestamp_select)
   {
-    case PPS_SYNC:
-    {
+    case PPS_SYNC: {
       if (!pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out))
       {
         ROS_WARN_STREAM("[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
@@ -858,9 +857,8 @@ bool DJISDKNode::get400HzTimestamp
         trigTime.time_ref     = now_time;
         trigger_publisher.publish(trigTime);
       }
-    }
-    case SOFT_SYNC:
-    {
+    } break;
+    case SOFT_SYNC: {
       if(curr_align_state != ALIGNED)
       {
         alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
@@ -876,13 +874,10 @@ bool DJISDKNode::get400HzTimestamp
         trigTime.time_ref     = now_time;
         trigger_publisher.publish(trigTime);
       }
-      break;
-    }
-    default:
-    {
+    } break;
+    default: {
       time_out = now_time;
-      break;
-    }
+    } break;
   }
   return true;
 #else
@@ -935,26 +930,20 @@ bool DJISDKNode::getSub400HzTimestamp
 #ifndef COMPARE_PPS_AND_SOFSYNC
   switch (timestamp_select)
   {
-    case PPS_SYNC:
-    {
+    case PPS_SYNC: {
       if (!pps_sync_->getSystemTime(packageTimeStamp, time_out))
       {
         ROS_WARN_STREAM("[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
         return false;
       }
-      break;
-    }
-    case SOFT_SYNC:
-    {
+    } break;
+    case SOFT_SYNC: {
       time_out = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
       return curr_align_state == ALIGNED;
-      break;
-    }
-    default:
-    {
+    } break;
+    default: {
       time_out = now_time;
-      break;
-    }
+    } break;
   }
   return true;
 #else
