@@ -902,10 +902,12 @@ bool DJISDKNode::get400HzTimestamp
     softsync_400hz_lag_pub.publish(softsync_lag);
 
     dji_sdk::HardSyncDebugStamped hs_dbg;
-    hs_dbg.header.stamp                   = pps_time;
-    hs_dbg.hardsync_timestamp.flag        = hardsyncTimeStamp.flag;
-    hs_dbg.hardsync_timestamp.time1ns     = hardsyncTimeStamp.time1ns;
-    hs_dbg.hardsync_timestamp.time2p5ms   = hardsyncTimeStamp.time2p5ms;
+    hs_dbg.header.stamp                       = pps_time;
+    hs_dbg.hardsync_timestamp.time2p5ms       = hardsyncTimeStamp.time2p5ms;
+    hs_dbg.hardsync_timestamp.time1ns         = hardsyncTimeStamp.time1ns;
+    hs_dbg.hardsync_timestamp.resetTime2p5ms  = hardsyncTimeStamp.resetTime2p5ms;
+    hs_dbg.hardsync_timestamp.index           = hardsyncTimeStamp.index;
+    hs_dbg.hardsync_timestamp.flag            = hardsyncTimeStamp.flag;
     hardsync_debug_publisher.publish(hs_dbg);
 
     dji_sdk::PackageTimestampDebugStamped pts_dbg;
