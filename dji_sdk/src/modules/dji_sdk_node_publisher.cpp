@@ -935,7 +935,7 @@ bool DJISDKNode::getSub400HzTimestamp
     case PPS_SYNC: {
       if (!pps_sync_->getSystemTime(packageTimeStamp, time_out))
       {
-        ROS_WARN_STREAM("[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
+        ROS_WARN_STREAM_THROTTLE(3.0, "[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
         return false;
       }
     } break;
