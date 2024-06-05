@@ -915,9 +915,17 @@ bool DJISDKNode::get400HzTimestamp
     pts_dbg.package_timestamp.time_ms = packageTimeStamp.time_ms;
     pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
     packagetimestamp_400Hz_debug_publisher.publish(pts_dbg);
+
   }
-  // Return PPS time
   time_out = pps_time;
+  if (ok && hardsyncTimeStamp.flag)
+  {
+    sensor_msgs::TimeReference trigTime;
+    trigTime.source       = "hard-sync";
+    trigTime.header.stamp = time_out;
+    trigTime.time_ref     = now_time;
+    trigger_publisher.publish(trigTime);
+  }
   return ok;
 #endif
 }
