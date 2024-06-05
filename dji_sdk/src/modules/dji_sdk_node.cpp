@@ -373,7 +373,7 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   time_sync_pps_source_publisher =
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
 
-#ifdef COMPARE_PPS_AND_SOFSYNC
+#ifdef COMPARE_PPS_AND_SOFTSYNC
   hardsync_debug_publisher =
       nh.advertise<dji_sdk::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);
   

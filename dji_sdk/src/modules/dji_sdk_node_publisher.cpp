@@ -840,7 +840,7 @@ bool DJISDKNode::get400HzTimestamp
   ros::Time& time_out
 )
 {
-#ifndef COMPARE_PPS_AND_SOFSYNC
+#ifndef COMPARE_PPS_AND_SOFTSYNC
   switch (timestamp_select)
   {
     case PPS_SYNC: {
@@ -929,7 +929,7 @@ bool DJISDKNode::getSub400HzTimestamp
   ros::Time& time_out
 )
 {
-#ifndef COMPARE_PPS_AND_SOFSYNC
+#ifndef COMPARE_PPS_AND_SOFTSYNC
   switch (timestamp_select)
   {
     case PPS_SYNC: {
