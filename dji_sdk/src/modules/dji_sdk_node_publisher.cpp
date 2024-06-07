@@ -36,6 +36,16 @@ void unpack
   package_time_stamp_out  = *(reinterpret_cast<Telemetry::TimeStamp*>(raw_ack_array + 1));
 }
 
+template<int PackageID>
+void publishStampDiff(const ros::Time& stamp, ros::Publisher& pub)
+{
+  static ros::Time prev_stamp{stamp};
+  dji_sdk::Int64Stamped stamp_diff_nsecs;
+  stamp_diff_nsecs.header.stamp = stamp;
+  stamp_diff_nsecs.data = (stamp - prev_stamp).toNSec();
+  pub.publish(stamp_diff_nsecs);
+  prev_stamp = stamp;
+}
 
 void
 DJISDKNode::SDKBroadcastCallback(Vehicle* vehicle, RecvContainer recvFrame,
@@ -415,6 +425,8 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   gps_raw_msg.fix               = gps_raw_details.fix;
   gps_raw_msg.num_visible_sats  = gps_raw_details.NSV;
   p->gps_raw_publisher.publish(gps_raw_msg);
+
+  publishStampDiff<DJISDKNode::PACKAGE_ID_5HZ>(msg_time, p->stamp_diff_5hz_pub);
 }
 
 void
@@ -697,6 +709,8 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     rc_joy.axes.push_back(static_cast<float>(rc.gear*1.0));
     p->rc_publisher.publish(rc_joy);
   }
+
+  publishStampDiff<DJISDKNode::PACKAGE_ID_50HZ>(msg_time, p->stamp_diff_50hz_pub);
 }
 
 void
@@ -781,6 +795,8 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   baro_height.header.stamp              = msg_time;
   baro_height.height_above_sea_level_m  = vehicle->subscribe->getValue<Telemetry::TOPIC_ALTITUDE_BAROMETER>();
   p->baro_height_publisher.publish(baro_height);
+
+  publishStampDiff<DJISDKNode::PACKAGE_ID_100HZ>(msg_time, p->stamp_diff_100hz_pub);
 }
 
 void
@@ -798,11 +814,13 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hardSync_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
 
-  sensor_msgs::Imu synced_imu;
-  synced_imu.header.frame_id = "body_FLU";
-  if (!p->get400HzTimestamp(hardSync_FC.ts, packageTimeStamp, now, synced_imu.header.stamp))
+  ros::Time msg_time;
+  if (!p->get400HzTimestamp(hardSync_FC.ts, packageTimeStamp, now, msg_time))
     return;
 
+  sensor_msgs::Imu synced_imu;
+  synced_imu.header.frame_id  = "body_FLU";
+  synced_imu.header.stamp     = msg_time;
   //y, z signs are flipped from RD to LU for rate and accel
   synced_imu.angular_velocity.x    =   hardSync_FC.w.x;
   synced_imu.angular_velocity.y    =  -hardSync_FC.w.y;
@@ -830,6 +848,7 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   p->imu_publisher.publish(synced_imu);
 
+  publishStampDiff<DJISDKNode::PACKAGE_ID_400HZ>(msg_time, p->stamp_diff_400hz_pub);
 }
 
 bool DJISDKNode::get400HzTimestamp
