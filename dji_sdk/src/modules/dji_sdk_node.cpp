@@ -373,6 +373,14 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   time_sync_pps_source_publisher =
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
 
+  stamp_diff_5hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/5hz", 5);
+  stamp_diff_50hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/50hz", 50);
+  stamp_diff_100hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/100hz", 100);
+  stamp_diff_400hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/400hz", 400);
 #ifdef COMPARE_PPS_AND_SOFTSYNC
   hardsync_debug_publisher =
       nh.advertise<dji_sdk::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);

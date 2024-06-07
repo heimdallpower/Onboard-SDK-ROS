@@ -51,8 +51,8 @@
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/UInt8Stamped.h>
 #include <dji_sdk/DateTimeStamped.h>
-#ifdef COMPARE_PPS_AND_SOFTSYNC
 #include <dji_sdk/Int64Stamped.h>
+#ifdef COMPARE_PPS_AND_SOFTSYNC
 #include <dji_sdk/PackageTimestampDebugStamped.h>
 #include <dji_sdk/HardSyncDebugStamped.h>
 #endif
@@ -414,6 +414,10 @@ private:
   ros::Publisher time_sync_fc_utc_publisher;
   ros::Publisher time_sync_pps_source_publisher;
 
+  ros::Publisher stamp_diff_5hz_pub;
+  ros::Publisher stamp_diff_50hz_pub;
+  ros::Publisher stamp_diff_100hz_pub;
+  ros::Publisher stamp_diff_400hz_pub;
 #ifdef COMPARE_PPS_AND_SOFTSYNC
   ros::Publisher hardsync_debug_publisher;
   ros::Publisher packagetimestamp_sub400Hz_debug_publisher;
