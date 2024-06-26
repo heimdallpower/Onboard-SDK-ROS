@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dji_sdk)
 
+# add_definitions(-DCOMPARE_PPS_AND_SOFTSYNC)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -82,6 +84,7 @@ add_message_files(
   MissionHotpointTask.msg
   FlightAnomaly.msg
   UInt8Stamped.msg
+  Int64Stamped.msg
   UInt32Stamped.msg
   VOPosition.msg
   RTKYaw.msg
@@ -90,6 +93,10 @@ add_message_files(
   GPSHealth.msg
   GPSRaw.msg
   BaroHeight.msg
+  HardSyncDebug.msg
+  HardSyncDebugStamped.msg
+  PackageTimestampDebug.msg
+  PackageTimestampDebugStamped.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -196,11 +203,16 @@ add_dependencies(dji_sdk_geometry
 add_dependencies(dji_sdk_node
   dji_sdk_generate_messages_cpp)
 
+if (NOT TARGET drone_pps)
+  add_subdirectory(include/drone_pps)
+endif()
+
 ## Specify libraries to link a library or executable target against
 target_link_libraries(dji_sdk_node
   ${catkin_LIBRARIES}
   ${DJIOSDK_LIBRARIES}
   dji_sdk_geometry
+  drone_pps
 )
 
 #############

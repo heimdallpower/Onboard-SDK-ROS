@@ -21,6 +21,31 @@
 
 #define _TICK2ROSTIME(tick) (ros::Duration((double)(tick) / 1000.0))
 
+template<int PackageID>
+void unpack
+(
+  DJI::OSDK::UserData userData,
+  uint8_t raw_ack_array[MAX_INCOMING_DATA_SIZE],
+  DJISDKNode** node_out,
+  Telemetry::TimeStamp& package_time_stamp_out
+)
+{
+  assert(DJISDKNode::PACKAGE_ID_5HZ <= PackageID && PackageID <= DJISDKNode::PACKAGE_ID_400HZ);
+  ROS_ASSERT(*raw_ack_array == PackageID);
+  *node_out               = reinterpret_cast<DJISDKNode*>(userData);
+  package_time_stamp_out  = *(reinterpret_cast<Telemetry::TimeStamp*>(raw_ack_array + 1));
+}
+
+template<int PackageID>
+void publishStampDiff(const ros::Time& stamp, ros::Publisher& pub)
+{
+  static ros::Time prev_stamp{stamp};
+  dji_sdk::Int64Stamped stamp_diff_nsecs;
+  stamp_diff_nsecs.header.stamp = stamp;
+  stamp_diff_nsecs.data = (stamp - prev_stamp).toNSec();
+  pub.publish(stamp_diff_nsecs);
+  prev_stamp = stamp;
+}
 
 void
 DJISDKNode::SDKBroadcastCallback(Vehicle* vehicle, RecvContainer recvFrame,
@@ -202,27 +227,17 @@ void
 DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
                             DJI::OSDK::UserData userData)
 {
-  DJISDKNode *p = (DJISDKNode *)userData;
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
+  unpack<DJISDKNode::PACKAGE_ID_5HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    &p, packageTimeStamp
+  );
 
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_5HZ == *data );
-
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
-
-  ros::Time msg_time = ros::Time::now();
-
-  if(p->align_time_with_FC)
-  {
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
+  ros::Time msg_time;
+  if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
+    return;
 
   const uint32_t gps_date{vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DATE>()};
   const uint32_t gps_time{vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_TIME>()};
@@ -410,32 +425,25 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   gps_raw_msg.fix               = gps_raw_details.fix;
   gps_raw_msg.num_visible_sats  = gps_raw_details.NSV;
   p->gps_raw_publisher.publish(gps_raw_msg);
+
+  publishStampDiff<DJISDKNode::PACKAGE_ID_5HZ>(msg_time, p->stamp_diff_5hz_pub);
 }
 
 void
 DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
                             DJI::OSDK::UserData userData)
 {
-  DJISDKNode* p = (DJISDKNode*)userData;
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
+  unpack<DJISDKNode::PACKAGE_ID_50HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    &p, packageTimeStamp
+  );
 
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_50HZ == *data );
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
-
-  ros::Time msg_time = ros::Time::now();
-
-  if(p->align_time_with_FC)
-  {
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
+  ros::Time msg_time;
+  if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
+    return;
 
   Telemetry::TypeMap<Telemetry::TOPIC_GPS_FUSED>::type fused_gps =
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_FUSED>();
@@ -701,32 +709,26 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     rc_joy.axes.push_back(static_cast<float>(rc.gear*1.0));
     p->rc_publisher.publish(rc_joy);
   }
+
+  publishStampDiff<DJISDKNode::PACKAGE_ID_50HZ>(msg_time, p->stamp_diff_50hz_pub);
 }
 
 void
 DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                   DJI::OSDK::UserData userData)
 {
-  DJISDKNode *p = (DJISDKNode *)userData;
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
 
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_100HZ == *data );
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
+  unpack<DJISDKNode::PACKAGE_ID_100HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    &p, packageTimeStamp
+  );
 
-  ros::Time msg_time = ros::Time::now();
-
-  if(p->align_time_with_FC)
-  {
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
+  ros::Time msg_time;
+  if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
+    return;
 
   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
           vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
@@ -793,44 +795,32 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   baro_height.header.stamp              = msg_time;
   baro_height.height_above_sea_level_m  = vehicle->subscribe->getValue<Telemetry::TOPIC_ALTITUDE_BAROMETER>();
   p->baro_height_publisher.publish(baro_height);
+
+  publishStampDiff<DJISDKNode::PACKAGE_ID_100HZ>(msg_time, p->stamp_diff_100hz_pub);
 }
 
 void
 DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                   DJI::OSDK::UserData userData)
 {
-  DJISDKNode *p = (DJISDKNode *) userData;
-
-  uint8_t* data = recvFrame.recvData.raw_ack_array;
-  ROS_ASSERT(DJISDKNode::PACKAGE_ID_400HZ == *data );
-
-  data++;
-  Telemetry::TimeStamp packageTimeStamp = * (reinterpret_cast<Telemetry::TimeStamp *>(data));
+  const ros::Time now{ros::Time::now()};
+  DJISDKNode *p;
+  Telemetry::TimeStamp packageTimeStamp;
+  unpack<DJISDKNode::PACKAGE_ID_400HZ>(
+    userData, recvFrame.recvData.raw_ack_array,
+    &p, packageTimeStamp
+  );
 
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hardSync_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
 
-  ros::Time now_time = ros::Time::now();
-  ros::Time msg_time = now_time;
-
-  if(p->align_time_with_FC)
-  {
-    p->alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
-    if(p->curr_align_state == ALIGNED)
-    {
-      msg_time = p->base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
-    }
-    else
-    {
-      return;
-    }
-  }
+  ros::Time msg_time;
+  if (!p->get400HzTimestamp(hardSync_FC.ts, packageTimeStamp, now, msg_time))
+    return;
 
   sensor_msgs::Imu synced_imu;
-
-  synced_imu.header.frame_id = "body_FLU";
-  synced_imu.header.stamp    = msg_time;
-
+  synced_imu.header.frame_id  = "body_FLU";
+  synced_imu.header.stamp     = msg_time;
   //y, z signs are flipped from RD to LU for rate and accel
   synced_imu.angular_velocity.x    =   hardSync_FC.w.x;
   synced_imu.angular_velocity.y    =  -hardSync_FC.w.y;
@@ -858,15 +848,159 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
   p->imu_publisher.publish(synced_imu);
 
-  if (hardSync_FC.ts.flag == 1)
+  publishStampDiff<DJISDKNode::PACKAGE_ID_400HZ>(msg_time, p->stamp_diff_400hz_pub);
+}
+
+bool DJISDKNode::get400HzTimestamp
+(
+  const Telemetry::SyncTimestamp& hardsyncTimeStamp,
+  const Telemetry::TimeStamp& packageTimeStamp,
+  const ros::Time& now_time,
+  ros::Time& time_out
+)
+{
+#ifndef COMPARE_PPS_AND_SOFTSYNC
+  switch (timestamp_select)
+  {
+    case PPS_SYNC: {
+      if (!pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out))
+      {
+        ROS_WARN_STREAM_THROTTLE(3.0, "[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
+        return false;
+      }
+      if (hardsyncTimeStamp.flag)
+      {
+        sensor_msgs::TimeReference trigTime;
+        trigTime.source       = "hard-sync";
+        trigTime.header.stamp = time_out;
+        trigTime.time_ref     = now_time;
+        trigger_publisher.publish(trigTime);
+      }
+    } break;
+    case SOFT_SYNC: {
+      if(curr_align_state != ALIGNED)
+      {
+        alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
+        return false;
+      }
+      time_out = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+
+      if (hardsyncTimeStamp.flag)
+      {
+        sensor_msgs::TimeReference trigTime;
+        trigTime.source       = "soft-sync";
+        trigTime.header.stamp = time_out;
+        trigTime.time_ref     = now_time;
+        trigger_publisher.publish(trigTime);
+      }
+    } break;
+    default: {
+      time_out = now_time;
+    } break;
+  }
+  return true;
+#else
+  // PPS
+  ros::Time pps_time;
+  const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, pps_time)};
+  // Softsync
+  ros::Time softsync_time;
+  const bool softsync_ok{curr_align_state == ALIGNED};
+  if(!softsync_ok)
+    alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
+  else
+    softsync_time = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+
+  // Publish lag
+  const bool ok{pps_ok && softsync_ok};
+  if (ok)
+  {
+    dji_sdk::Int64Stamped softsync_lag;
+    softsync_lag.header.stamp = pps_time;
+    softsync_lag.data         = (softsync_time - pps_time).toNSec();
+    softsync_400hz_lag_pub.publish(softsync_lag);
+
+    dji_sdk::HardSyncDebugStamped hs_dbg;
+    hs_dbg.header.stamp                       = pps_time;
+    hs_dbg.hardsync_timestamp.time2p5ms       = hardsyncTimeStamp.time2p5ms;
+    hs_dbg.hardsync_timestamp.time1ns         = hardsyncTimeStamp.time1ns;
+    hs_dbg.hardsync_timestamp.resetTime2p5ms  = hardsyncTimeStamp.resetTime2p5ms;
+    hs_dbg.hardsync_timestamp.index           = hardsyncTimeStamp.index;
+    hs_dbg.hardsync_timestamp.flag            = hardsyncTimeStamp.flag;
+    hardsync_debug_publisher.publish(hs_dbg);
+
+    dji_sdk::PackageTimestampDebugStamped pts_dbg;
+    pts_dbg.header.stamp              = pps_time;
+    pts_dbg.package_timestamp.time_ms = packageTimeStamp.time_ms;
+    pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
+    packagetimestamp_400Hz_debug_publisher.publish(pts_dbg);
+
+  }
+  time_out = pps_time;
+  if (ok && hardsyncTimeStamp.flag)
   {
     sensor_msgs::TimeReference trigTime;
-    trigTime.header.stamp = msg_time;
+    trigTime.source       = "hard-sync";
+    trigTime.header.stamp = time_out;
     trigTime.time_ref     = now_time;
-    trigTime.source       = "FC";
-
-    p->trigger_publisher.publish(trigTime);
+    trigger_publisher.publish(trigTime);
   }
+  return ok;
+#endif
+}
+
+bool DJISDKNode::getSub400HzTimestamp
+(
+  const Telemetry::TimeStamp& packageTimeStamp,
+  const ros::Time& now_time,
+  ros::Time& time_out
+)
+{
+#ifndef COMPARE_PPS_AND_SOFTSYNC
+  switch (timestamp_select)
+  {
+    case PPS_SYNC: {
+      if (!pps_sync_->getSystemTime(packageTimeStamp, time_out))
+      {
+        ROS_WARN_STREAM_THROTTLE(3.0, "[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
+        return false;
+      }
+    } break;
+    case SOFT_SYNC: {
+      time_out = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+      return curr_align_state == ALIGNED;
+    } break;
+    default: {
+      time_out = now_time;
+    } break;
+  }
+  return true;
+#else
+  ros::Time pps_time;
+  const bool pps_ok{true};
+  pps_sync_->getSystemTime(packageTimeStamp, pps_time);
+
+  ros::Time softsync_time;
+  const bool softsync_ok{curr_align_state == ALIGNED};
+  softsync_time = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
+
+  const bool ok{pps_ok && softsync_ok};
+  if (ok)
+  {
+    dji_sdk::Int64Stamped softsync_lag;
+    softsync_lag.header.stamp = pps_time;
+    softsync_lag.data         = (softsync_time - pps_time).toNSec();
+    softsync_sub400hz_lag_pub.publish(softsync_lag);
+
+    dji_sdk::PackageTimestampDebugStamped pts_dbg;
+    pts_dbg.header.stamp              = pps_time;
+    pts_dbg.package_timestamp.time_ms = packageTimeStamp.time_ms;
+    pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
+    packagetimestamp_sub400Hz_debug_publisher.publish(pts_dbg);
+  }
+  time_out = pps_time;
+  return ok;
+#endif
 }
 
 /*!
