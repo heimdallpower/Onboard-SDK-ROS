@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dji_sdk)
 
+# add_definitions(-DCOMPARE_PPS_AND_SOFTSYNC)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
