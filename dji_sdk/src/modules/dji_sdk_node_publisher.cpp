@@ -257,17 +257,17 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   Telemetry::TypeMap<Telemetry::TOPIC_BATTERY_INFO>::type battery_info=
     vehicle->subscribe->getValue<Telemetry::TOPIC_BATTERY_INFO>();
   sensor_msgs::BatteryState msg_battery_state;
-  msg_battery_state.header.stamp = msg_time;
-  msg_battery_state.capacity = battery_info.capacity;
-  msg_battery_state.voltage  = battery_info.voltage;
-  msg_battery_state.current  = battery_info.current;
-  msg_battery_state.percentage = battery_info.percentage;
-  msg_battery_state.charge   = NAN;
-  msg_battery_state.design_capacity = NAN;
-  msg_battery_state.power_supply_health = msg_battery_state.POWER_SUPPLY_HEALTH_UNKNOWN;
-  msg_battery_state.power_supply_status = msg_battery_state.POWER_SUPPLY_STATUS_UNKNOWN;
+  msg_battery_state.header.stamp            = msg_time;
+  msg_battery_state.capacity                = static_cast<float>(battery_info.capacity) / 1000.f; // mAh -> Ah
+  msg_battery_state.voltage                 = static_cast<float>(battery_info.voltage) / 1000.f;  // mV -> V
+  msg_battery_state.current                 = static_cast<float>(battery_info.current) / 1000.f;  // mA -> A
+  msg_battery_state.percentage              = static_cast<float>(battery_info.percentage);
+  msg_battery_state.charge                  = NAN;
+  msg_battery_state.design_capacity         = NAN;
+  msg_battery_state.power_supply_health     = msg_battery_state.POWER_SUPPLY_HEALTH_UNKNOWN;
+  msg_battery_state.power_supply_status     = msg_battery_state.POWER_SUPPLY_STATUS_UNKNOWN;
   msg_battery_state.power_supply_technology = msg_battery_state.POWER_SUPPLY_TECHNOLOGY_UNKNOWN;
-  msg_battery_state.present = (battery_info.voltage!=0);
+  msg_battery_state.present                 = (battery_info.voltage!=0);
   p->battery_state_publisher.publish(msg_battery_state);
 
   if(p->rtkSupport)
@@ -1024,7 +1024,8 @@ void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t t
   {
     static int aligned_count = 0;
     static int retry_count = 0;
-    ROS_INFO_THROTTLE(1.0, "[dji_sdk] Aliging time...");
+    constexpr int MAX_RETRIES = 500;
+    ROS_INFO_THROTTLE(1.0, "[dji_sdk] Aligning time...");
 
     double dt = std::fabs((now_time - (base_time + _TICK2ROSTIME(tick))).toSec());
 
@@ -1045,6 +1046,11 @@ void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t t
     {
       ROS_INFO("[dji_sdk] ***** Time alignment successful! *****");
       curr_align_state = ALIGNED;
+    }
+    else if (retry_count > MAX_RETRIES)
+    {
+      ROS_ERROR("[dji_sdk] ***** Max time alignment retries exceeded, shutting down. *****");
+      ros::shutdown();
     }
 
     return;

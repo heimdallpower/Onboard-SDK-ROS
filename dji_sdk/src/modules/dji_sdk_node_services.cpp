@@ -108,10 +108,19 @@ DJISDKNode::sdkCtrlAuthorityCallback(
   response.cmd_id   = (int)ack.info.cmd_id;
   response.ack_data = (unsigned int)ack.data;
 
+  dji_sdk::UInt32Stamped ack_data_msg;
+  ack_data_msg.header.stamp = ros::Time::now();
+  ack_data_msg.data = ack.data;
+  control_authority_ack_publisher.publish(ack_data_msg);
+
   if (ACK::getError(ack))
   {
     response.result = false;
     ACK::getErrorCodeMessage(ack, __func__);
+    ROS_ERROR(
+      "[dji_sdk] Control authority error: %s",
+      controlAuthorityErrorString(ack.data).c_str()
+    );
   }
   else
   {

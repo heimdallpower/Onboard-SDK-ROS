@@ -384,19 +384,22 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 #ifdef COMPARE_PPS_AND_SOFTSYNC
   hardsync_debug_publisher =
       nh.advertise<dji_sdk::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);
-  
+
   packagetimestamp_sub400Hz_debug_publisher =
       nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/sub400hz", 400);
-  
+
   packagetimestamp_400Hz_debug_publisher =
       nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/400hz", 400);
-  
+
   softsync_400hz_lag_pub =
     nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_400hz_lag_nsec", 400);
-  
+
   softsync_sub400hz_lag_pub =
     nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_sub_400hz_lag_nsec", 400);
 #endif
+  control_authority_ack_publisher =
+      nh.advertise<dji_sdk::UInt32Stamped>("dji_sdk/control_authority_ack", 10);
+
 #ifdef ADVANCED_SENSING
   stereo_240p_front_left_publisher =
     nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_front_left_images", 10);
@@ -774,3 +777,26 @@ void DJISDKNode::gpsConvertENU(double &ENU_x, double &ENU_y,
   ENU_y = DEG2RAD(d_lat) * C_EARTH;
   ENU_x = DEG2RAD(d_lon) * C_EARTH * cos(DEG2RAD(gps_t_lat));
 };
+
+std::string DJISDKNode::controlAuthorityErrorString(const uint32_t error_code)
+{
+  using ErrorCode = OpenProtocolCMD::ErrorCode::ControlACK::SetControl;
+  if (error_code == ErrorCode::RC_MODE_ERROR)
+    return "RC_MODE_ERROR";
+  else if (error_code == ErrorCode::RELEASE_CONTROL_SUCCESS)
+    return "RELEASE_CONTROL_SUCCESS";
+  else if (error_code == ErrorCode::OBTAIN_CONTROL_SUCCESS)
+    return "OBTAIN_CONTROL_SUCCESS";
+  else if (error_code == ErrorCode::OBTAIN_CONTROL_IN_PROGRESS)
+    return "OBTAIN_CONTROL_IN_PROGRESS";
+  else if (error_code == ErrorCode::RELEASE_CONTROL_IN_PROGRESS)
+    return "RELEASE_CONTROL_IN_PROGRESS";
+  else if (error_code == ErrorCode::RC_NEED_MODE_F)
+    return "RC_NEED_MODE_F";
+  else if (error_code == ErrorCode::RC_NEED_MODE_P)
+    return "RC_NEED_MODE_P";
+  else if (error_code == ErrorCode::IOC_OBTAIN_CONTROL_ERROR)
+    return "IOC_OBTAIN_CONTROL_ERROR";
+  else
+    return "";
+}

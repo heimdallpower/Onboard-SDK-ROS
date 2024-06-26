@@ -85,6 +85,7 @@ add_message_files(
   FlightAnomaly.msg
   UInt8Stamped.msg
   Int64Stamped.msg
+  UInt32Stamped.msg
   VOPosition.msg
   RTKYaw.msg
   RTKPosition.msg
