@@ -19,15 +19,15 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     R_ENU2NED(tf::Matrix3x3(0,  1,  0, 1,  0,  0, 0,  0, -1)),
     curr_align_state(UNALIGNED)
 {
-  nh_private.param("serial_name",   serial_device, std::string("/dev/ttyUSB0"));
-  nh_private.param("baud_rate",     baud_rate, 921600);
-  nh_private.param("app_id",        app_id,    123456);
-  nh_private.param("app_version",   app_version, 1);
-  nh_private.param("enc_key",       enc_key, std::string("abcd1234"));
-  nh_private.param("drone_version", drone_version, std::string("M100")); // choose M100 as default
-  nh_private.param("gravity_const", gravity_const, 9.801);
-  nh_private.param("align_time",    align_time_with_FC, false);
-  nh_private.param("use_broadcast", user_select_broadcast, false);
+  nh_private.param("serial_name"              , serial_device         , std::string("/dev/ttyUSB0"));
+  nh_private.param("baud_rate"                , baud_rate             , 921600);
+  nh_private.param("app_id"                   , app_id                , 123456);
+  nh_private.param("app_version"              , app_version           , 1);
+  nh_private.param("enc_key"                  , enc_key               , std::string("abcd1234"));
+  nh_private.param("drone_version"            , drone_version         , std::string("M100")); // choose M100 as default
+  nh_private.param("gravity_const"            , gravity_const         , 9.801);
+  nh_private.param("software_time_alignment"  , align_time_with_FC    , false);
+  nh_private.param("use_broadcast"            , user_select_broadcast , false);
 
   //! Default values for local Position
   local_pos_ref_latitude  = 0;
@@ -54,33 +54,68 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
   {
     ROS_ERROR("Vehicle initialization failed");
     ros::shutdown();
+    return;
   }
 
+  std::string pps_device_path;
+  if (!nh_private.getParam("pps_device", pps_device_path))
+  {
+    ROS_FATAL_STREAM("[dji_sdk] PPS device path not supplied. Shutting down.");
+    ros::shutdown();
+    return;
+  }
+
+  if (pps_device_path != "")
+  {
+    vehicle->hardSync->setSyncFreq(1ul);
+
+    pps::Handler::CreationStatus pps_creation_status{pps::Handler::CreationStatus::OK};
+    pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
+      pps_device_path,
+      pps_creation_status
+    });
+    if (pps_creation_status != pps::Handler::CreationStatus::OK)
+    {
+      ROS_FATAL_STREAM("[dji_sdk] PPS init error " << pps_creation_status << ". Shutting down.");
+      ros::shutdown();
+      return;
+    }
+    timestamp_select = PPS_SYNC;
+    ROS_INFO("[dji_sdk] PPS used for time synchronization.");
+  }
+  else if (align_time_with_FC)
+  {
+    timestamp_select = SOFT_SYNC;
+    ROS_INFO("[dji_sdk] Software used for time synchronization.");
+  }
   else
   {
-    if (!initServices(nh))
-    {
-      ROS_ERROR("initServices failed");
-      ros::shutdown();
-    }
+    timestamp_select = NO_SYNC;
+    ROS_INFO("[dji_sdk] No time synchronization. ros::Time::now() of arrival used to stamp data.");
+  }
 
-    if (!initFlightControl(nh))
-    {
-      ROS_ERROR("initFlightControl failed");
-      ros::shutdown();
-    }
+  if (!initServices(nh))
+  {
+    ROS_ERROR("initServices failed");
+    ros::shutdown();
+  }
 
-    if (!initSubscriber(nh))
-    {
-      ROS_ERROR("initSubscriber failed");
-      ros::shutdown();
-    }
+  if (!initFlightControl(nh))
+  {
+    ROS_ERROR("initFlightControl failed");
+    ros::shutdown();
+  }
 
-    if (!initPublisher(nh))
-    {
-      ROS_ERROR("initPublisher failed");
-      ros::shutdown();
-    }
+  if (!initSubscriber(nh))
+  {
+    ROS_ERROR("initSubscriber failed");
+    ros::shutdown();
+  }
+
+  if (!initPublisher(nh))
+  {
+    ROS_ERROR("initPublisher failed");
+    ros::shutdown();
   }
 }
 
@@ -338,6 +373,30 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   time_sync_pps_source_publisher =
       nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
 
+  stamp_diff_5hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/5hz", 5);
+  stamp_diff_50hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/50hz", 50);
+  stamp_diff_100hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/100hz", 100);
+  stamp_diff_400hz_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/400hz", 400);
+#ifdef COMPARE_PPS_AND_SOFTSYNC
+  hardsync_debug_publisher =
+      nh.advertise<dji_sdk::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);
+
+  packagetimestamp_sub400Hz_debug_publisher =
+      nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/sub400hz", 400);
+
+  packagetimestamp_400Hz_debug_publisher =
+      nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/400hz", 400);
+
+  softsync_400hz_lag_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_400hz_lag_nsec", 400);
+
+  softsync_sub400hz_lag_pub =
+    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_sub_400hz_lag_nsec", 400);
+#endif
   control_authority_ack_publisher =
       nh.advertise<dji_sdk::UInt32Stamped>("dji_sdk/control_authority_ack", 10);
 
@@ -404,15 +463,6 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
   else if (telemetry_from_fc == USE_SUBSCRIBE)
   {
     ROS_INFO("Use data subscription to get telemetry data!");
-    if(!align_time_with_FC)
-    {
-      ROS_INFO("align_time_with_FC set to false. We will use ros time to time stamp messages!");
-    }
-    else
-    {
-      ROS_INFO("align_time_with_FC set to true. We will time stamp messages based on flight controller time!");
-    }
-
     // Extra topics that is only available from subscription
 
     // Details can be found in DisplayMode enum in dji_sdk.h

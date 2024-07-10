@@ -12,6 +12,8 @@
 #ifndef DJI_SDK_NODE_MAIN_H
 #define DJI_SDK_NODE_MAIN_H
 
+// #define COMPARE_PPS_AND_SOFTSYNC
+
 //! ROS
 #include <ros/ros.h>
 #include <tf/tf.h>
@@ -50,7 +52,11 @@
 #include <dji_sdk/UInt8Stamped.h>
 #include <dji_sdk/UInt32Stamped.h>
 #include <dji_sdk/DateTimeStamped.h>
-
+#include <dji_sdk/Int64Stamped.h>
+#ifdef COMPARE_PPS_AND_SOFTSYNC
+#include <dji_sdk/PackageTimestampDebugStamped.h>
+#include <dji_sdk/HardSyncDebugStamped.h>
+#endif
 //! mission service
 // missionManager
 #include <dji_sdk/MissionStatus.h>
@@ -88,6 +94,9 @@
 #include <dji_sdk/StereoVGASubscription.h>
 #include <dji_sdk/SetupCameraStream.h>
 #endif
+
+//! PPS synchronization
+#include "pps_synchronizer.hpp"
 
 //! SDK library
 #include <djiosdk/dji_vehicle.hpp>
@@ -408,6 +417,18 @@ private:
   //! SDK control authority request ack data publisher
   ros::Publisher control_authority_ack_publisher;
 
+  ros::Publisher stamp_diff_5hz_pub;
+  ros::Publisher stamp_diff_50hz_pub;
+  ros::Publisher stamp_diff_100hz_pub;
+  ros::Publisher stamp_diff_400hz_pub;
+#ifdef COMPARE_PPS_AND_SOFTSYNC
+  ros::Publisher hardsync_debug_publisher;
+  ros::Publisher packagetimestamp_sub400Hz_debug_publisher;
+  ros::Publisher packagetimestamp_400Hz_debug_publisher;
+  ros::Publisher softsync_400hz_lag_pub;
+  ros::Publisher softsync_sub400hz_lag_pub;
+#endif
+
 #ifdef ADVANCED_SENSING
   ros::Publisher stereo_240p_front_left_publisher;
   ros::Publisher stereo_240p_front_right_publisher;
@@ -482,6 +503,31 @@ private:
   double bias_gps_latitude, bias_gps_longitude, bias_gps_altitude;
   int current_rtk_health;
   bool rtkSupport;
+
+  std::unique_ptr<DJISDK::Synchronizer> pps_sync_;
+
+  enum TimeStampSelect: uint8_t
+  {
+    PPS_SYNC,
+    SOFT_SYNC,
+    NO_SYNC
+  } timestamp_select;
+
+  bool get400HzTimestamp
+  (
+    const Telemetry::SyncTimestamp& hardsyncTimeStamp,
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_measurement_out
+  );
+
+  bool getSub400HzTimestamp
+  (
+    const Telemetry::TimeStamp& packageTimeStamp,
+    const ros::Time& now_time,
+    ros::Time& data_time_of_measurement_out
+  );
+
 };
 
 #endif // DJI_SDK_NODE_MAIN_H
