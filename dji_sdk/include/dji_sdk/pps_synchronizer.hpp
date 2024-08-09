@@ -37,7 +37,7 @@ public:
     const bool accept_new_pulse{new_pulse_arrived && (!alignment_exists_ || isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM))};
     valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
     if (new_pulse_arrived && !accept_new_pulse)
-      ROS_WARN_STREAM("[dji_sdk Synchronizer] Denied PPS pulse.");
+      ROS_WARN_STREAM("[dji_sdk Synchronizer] denied pulse outside of permitted window.");
     const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
     if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && valid_pulse_arrived_since_prev_flag_)
     {
