@@ -64,6 +64,13 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     ros::shutdown();
     return;
   }
+  double pps_window_half_width_sec;
+  if (!nh_private.getParam("pps_window_half_width_sec", pps_window_half_width_sec) || (pps_window_half_width_sec >= 0.5))
+  {
+    ROS_FATAL_STREAM("[dji_sdk] PPS window width not supplied/invalid. Shutting down.");
+    ros::shutdown();
+    return;
+  }
 
   if (pps_device_path != "")
   {
@@ -72,6 +79,7 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     pps::Handler::CreationStatus pps_creation_status{pps::Handler::CreationStatus::OK};
     pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
       pps_device_path,
+      pps_window_half_width_sec,
       pps_creation_status
     });
     if (pps_creation_status != pps::Handler::CreationStatus::OK)
