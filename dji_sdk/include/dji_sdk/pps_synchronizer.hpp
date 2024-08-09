@@ -34,10 +34,11 @@ public:
     bool new_pulse_arrived{false};
     std::chrono::system_clock::time_point last_rising_edge_time_SYSTEM;
     const bool pps_fetch_ok{pps_handler_.getLastAssertTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
-    const bool accept_new_pulse{new_pulse_arrived && (!alignment_exists_ || isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM))};
+    boost::chrono::nanoseconds diff;
+    const bool accept_new_pulse{new_pulse_arrived && (!alignment_exists_ || isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM, diff))};
+
     valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
-    if (new_pulse_arrived && !accept_new_pulse)
-      ROS_WARN_STREAM("[dji_sdk Synchronizer] denied pulse outside of permitted window.");
+    ROS_WARN_STREAM_COND(new_pulse_arrived && !accept_new_pulse, "[dji_sdk Synchronizer] denied pulse outside of permitted window. New pulse came " << diff.count() * 1e-9 << " secs after previous good pulse.");
     const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
     if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && valid_pulse_arrived_since_prev_flag_)
     {
@@ -99,7 +100,8 @@ private:
   bool isPulseInExpectedWindow
   (
     const std::chrono::system_clock::time_point& curr_pulse_time,
-    const std::chrono::system_clock::time_point& prev_valid_pulse_time
+    const std::chrono::system_clock::time_point& prev_valid_pulse_time,
+    boost::chrono::nanoseconds& diff_out
   ) const
   {
     const boost::chrono::nanoseconds diff{(curr_pulse_time - prev_valid_pulse_time).count()};
@@ -107,6 +109,7 @@ private:
     const auto diff_lag_nsec{diff - boost::chrono::duration_cast<boost::chrono::nanoseconds>(diff_nearest_seconds)};
     const auto diff_num_seconds{diff_nearest_seconds.count()};
     const bool pulse_in_expected_window{std::abs(diff_lag_nsec.count()) < pps_window_half_width_nsec_ * diff_num_seconds};
+    diff_out = diff;
     return pulse_in_expected_window;
   }
 };
