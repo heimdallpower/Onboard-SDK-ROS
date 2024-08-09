@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <cmath>
+#include <boost/chrono/round.hpp>
 #include <drone_pps/include/drone_pps.hpp>
 #include <dji_telemetry.hpp>
 #include <ros/ros.h>
@@ -11,8 +12,14 @@ namespace DJISDK
 class Synchronizer
 {
 public:
-  Synchronizer(const std::string& pps_dev_path, pps::Handler::CreationStatus& creation_status_out):
+  Synchronizer
+  (
+    const std::string& pps_dev_path,
+    const double pps_window_half_width_sec,
+    pps::Handler::CreationStatus& creation_status_out
+  ):
   pps_handler_{pps_dev_path, creation_status_out},
+  pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
   alignment_exists_{false},
   pulse_arrived_since_prev_flag_{false}
   {}
@@ -27,8 +34,11 @@ public:
     bool new_pulse_arrived{false};
     std::chrono::system_clock::time_point last_rising_edge_time_SYSTEM;
     const bool pps_fetch_ok{pps_handler_.getLastAssertTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
-    pulse_arrived_since_prev_flag_ |= new_pulse_arrived;
-
+    const bool new_pulse_in_expected_window{new_pulse_arrived && isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM)};
+    const bool accept_pulse{!alignment_exists_ || new_pulse_in_expected_window};
+    pulse_arrived_since_prev_flag_ |= accept_pulse;
+    if (!accept_pulse)
+      ROS_ERROR_STREAM("[dji_sdk Synchronizer] Denied PPS pulse.");
     const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
     if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && pulse_arrived_since_prev_flag_)
     {
@@ -53,6 +63,8 @@ public:
   }
 
 private:
+  static constexpr boost::chrono::seconds::rep S2NS{1000000000ll};
+
   pps::Handler pps_handler_;
   struct
   {
@@ -60,6 +72,8 @@ private:
     std::chrono::nanoseconds HARDSYNC_FC;
     std::chrono::nanoseconds PACKAGE_FC;
   } in_use_rising_edge_time_;
+
+  const boost::chrono::seconds::rep pps_window_half_width_nsec_;
   
   bool alignment_exists_;
   bool pulse_arrived_since_prev_flag_;
@@ -81,6 +95,20 @@ private:
   {
     static constexpr int64_t NSECS_PER_2P5MSECS{2500000};
     return std::chrono::nanoseconds{NSECS_PER_2P5MSECS * static_cast<int64_t>(stamp_HARDSYNC_FC.time2p5ms)};
+  }
+
+  bool isPulseInExpectedWindow
+  (
+    const std::chrono::system_clock::time_point& curr_pulse_time,
+    const std::chrono::system_clock::time_point& prev_valid_pulse_time
+  ) const
+  {
+    const boost::chrono::nanoseconds diff{(curr_pulse_time - prev_valid_pulse_time).count()};
+    const auto diff_nearest_seconds{boost::chrono::round<boost::chrono::seconds>(diff)};
+    const auto diff_lag_nsec{diff - boost::chrono::duration_cast<boost::chrono::nanoseconds>(diff_nearest_seconds)};
+    const auto diff_num_seconds{diff_nearest_seconds.count()};
+    const bool pulse_in_expected_window{std::abs(diff_lag_nsec.count()) < pps_window_half_width_nsec_ * diff_num_seconds};
+    return pulse_in_expected_window;
   }
 };
   
