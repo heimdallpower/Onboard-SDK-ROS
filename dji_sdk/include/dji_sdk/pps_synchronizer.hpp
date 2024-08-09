@@ -21,7 +21,7 @@ public:
   pps_handler_{pps_dev_path, creation_status_out},
   pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
   alignment_exists_{false},
-  pulse_arrived_since_prev_flag_{false}
+  valid_pulse_arrived_since_prev_flag_{false}
   {}
 
   bool getSystemTime
@@ -34,16 +34,15 @@ public:
     bool new_pulse_arrived{false};
     std::chrono::system_clock::time_point last_rising_edge_time_SYSTEM;
     const bool pps_fetch_ok{pps_handler_.getLastAssertTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
-    const bool new_pulse_in_expected_window{new_pulse_arrived && isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM)};
-    const bool accept_new_pulse{(new_pulse_arrived && !alignment_exists_) || new_pulse_in_expected_window};
-    pulse_arrived_since_prev_flag_ |= accept_new_pulse;
+    const bool accept_new_pulse{new_pulse_arrived && (!alignment_exists_ || isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM))};
+    valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
     if (new_pulse_arrived && !accept_new_pulse)
-      ROS_ERROR_STREAM("[dji_sdk Synchronizer] Denied PPS pulse.");
+      ROS_WARN_STREAM("[dji_sdk Synchronizer] Denied PPS pulse.");
     const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
-    if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && pulse_arrived_since_prev_flag_)
+    if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && valid_pulse_arrived_since_prev_flag_)
     {
       alignment_exists_                     = true;
-      pulse_arrived_since_prev_flag_        = false;
+      valid_pulse_arrived_since_prev_flag_  = false;
       in_use_rising_edge_time_.SYSTEM       = last_rising_edge_time_SYSTEM;
       in_use_rising_edge_time_.HARDSYNC_FC  = time_HARDSYNC_FC;
       in_use_rising_edge_time_.PACKAGE_FC   = toChronoNsecs(stamp_PACKAGE_FC);
@@ -76,7 +75,7 @@ private:
   const boost::chrono::seconds::rep pps_window_half_width_nsec_;
   
   bool alignment_exists_;
-  bool pulse_arrived_since_prev_flag_;
+  bool valid_pulse_arrived_since_prev_flag_;
 
   static std::chrono::nanoseconds toChronoNsecs(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC)
   {
