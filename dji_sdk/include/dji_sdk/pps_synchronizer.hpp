@@ -102,7 +102,6 @@ private:
     const std::chrono::system_clock::time_point& prev_valid_pulse_time
   ) const
   {
-    ROS_INFO_STREAM((curr_pulse_time - prev_valid_pulse_time).count() * 1e-9);
     const boost::chrono::nanoseconds diff{(curr_pulse_time - prev_valid_pulse_time).count()};
     const auto diff_nearest_seconds{boost::chrono::round<boost::chrono::seconds>(diff)};
     const auto diff_lag_nsec{diff - boost::chrono::duration_cast<boost::chrono::nanoseconds>(diff_nearest_seconds)};
