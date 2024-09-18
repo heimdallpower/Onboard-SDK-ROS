@@ -104,13 +104,30 @@ private:
     boost::chrono::nanoseconds& diff_out
   ) const
   {
-    const boost::chrono::nanoseconds diff{(curr_pulse_time - prev_valid_pulse_time).count()};
-    const auto diff_nearest_seconds{boost::chrono::round<boost::chrono::seconds>(diff)};
-    const auto diff_lag_nsec{diff - boost::chrono::duration_cast<boost::chrono::nanoseconds>(diff_nearest_seconds)};
-    const auto diff_num_seconds{diff_nearest_seconds.count()};
+    int_least64_t diff_num_seconds;
+    int_least64_t diff_lag_nsec;
+    diff_out = getTimeDiff(curr_pulse_time, prev_valid_pulse_time, diff_num_seconds, diff_lag_nsec);
     const bool pulse_in_expected_window{std::abs(diff_lag_nsec.count()) < pps_window_half_width_nsec_ * diff_num_seconds};
-    diff_out = diff;
     return pulse_in_expected_window;
+  }
+
+  /**
+   * Computers diff_quotient & diff_remainder such that
+   * curr = prev + diff_quotient_sec + (diff_remainder_nsec / 1'000'000'000)
+  */
+  boost::chrono::nanoseconds getTimeDiff
+  (
+    const std::chrono::system_clock::time_point& curr,
+    const std::chrono::system_clock::time_point& prev,
+    int_least64_t& diff_quotient_sec,
+    int_least64_t& diff_remainder_nsec
+  )
+  {
+    const boost::chrono::nanoseconds diff{(curr - prev).count()};
+    const boost::chrono::seconds tmp{boost::chrono::round<boost::chrono::seconds>(diff)};
+    diff_quotient_sec   = tmp.count();
+    diff_remainder_nsec = (diff - boost::chrono::duration_cast<boost::chrono::nanoseconds>(tmp)).count();
+    return diff;
   }
 };
   
