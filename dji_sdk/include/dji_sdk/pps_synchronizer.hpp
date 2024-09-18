@@ -35,7 +35,8 @@ public:
     std::chrono::system_clock::time_point last_rising_edge_time_SYSTEM;
     const bool pps_fetch_ok{pps_handler_.getLastAssertTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
     boost::chrono::nanoseconds diff;
-    const bool accept_new_pulse{new_pulse_arrived && (!alignment_exists_ || isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM, diff))};
+    const bool pulse_in_expected_window{isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM, diff)};
+    const bool accept_new_pulse{new_pulse_arrived && (!alignment_exists_ || pulse_in_expected_window)};
 
     valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
     ROS_WARN_STREAM_COND(new_pulse_arrived && !accept_new_pulse, "[dji_sdk Synchronizer] denied pulse outside of permitted window. New pulse came " << diff.count() * 1e-9 << " secs after previous good pulse.");
@@ -113,17 +114,18 @@ private:
 
   /**
    * Computers diff_quotient & diff_remainder such that
-   * curr = prev + diff_quotient_sec + (diff_remainder_nsec / 1'000'000'000)
+   * a = b + diff_quotient_sec + (diff_remainder_nsec / 1'000'000'000)
   */
-  boost::chrono::nanoseconds getTimeDiff
+  template<typename TimeType>
+  static boost::chrono::nanoseconds getTimeDiff
   (
-    const std::chrono::system_clock::time_point& curr,
-    const std::chrono::system_clock::time_point& prev,
+    const TimeType& a,
+    const TimeType& b,
     int_least64_t& diff_quotient_sec,
     int_least64_t& diff_remainder_nsec
   )
   {
-    const boost::chrono::nanoseconds diff{(curr - prev).count()};
+    const boost::chrono::nanoseconds diff{(a - b).count()};
     const boost::chrono::seconds tmp{boost::chrono::round<boost::chrono::seconds>(diff)};
     diff_quotient_sec   = tmp.count();
     diff_remainder_nsec = (diff - boost::chrono::duration_cast<boost::chrono::nanoseconds>(tmp)).count();
