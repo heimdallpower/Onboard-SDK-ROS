@@ -22,7 +22,7 @@ public:
   pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
   alignment_exists_{false},
   valid_pulse_arrived_since_prev_flag_{false},
-  on_ground_{false}
+  allow_realign_{false}
   {}
 
   bool getSystemTime
@@ -44,21 +44,24 @@ public:
 
     if (new_pulse_arrived)
     {
-      if (on_ground_ && !accept_new_pulse)
+      if (allow_realign_ && !accept_new_pulse)
       {
         int_least64_t diff_num_seconds;
         int_least64_t diff_lag_nsec;
         getTimeDiff(diff, prev_diff_, diff_num_seconds, diff_lag_nsec);
 
-        constexpr int_least64_t realign_acceptable_nsec_diff_{static_cast<int_least64_t>(0.0001 * S2NS)};
-        constexpr size_t min_consecutive_offset_1_sec_delta_pulses{5};
+        constexpr int_least64_t REALIGN_ACCEPTABLE_NSEC_DIFF{static_cast<int_least64_t>(0.0001 * S2NS)};
+        constexpr size_t MIN_CONSECUTIVE_OFFSET_1_SEC_DELTA_PULSES{5};
 
-        if (diff_num_seconds == 1 && (std::abs(diff_lag_nsec) < realign_acceptable_nsec_diff_))
+        ROS_WARN_STREAM("[dji_sdk Synchronizer] realign diff whole sec: " << diff_num_seconds << ", delta: " << diff_lag_nsec * 1e-9);
+
+        if (diff_num_seconds == 1 && (std::abs(diff_lag_nsec) < REALIGN_ACCEPTABLE_NSEC_DIFF))
         {
-          if (++consecutive_offset_1_sec_delta_pulses_ >= min_consecutive_offset_1_sec_delta_pulses)
+
+          if (++consecutive_offset_1_sec_delta_pulses_ >= MIN_CONSECUTIVE_OFFSET_1_SEC_DELTA_PULSES)
           {
             accept_new_pulse = true;
-            ROS_WARN_STREAM("[dji_sdk Synchronizer] " << min_consecutive_offset_1_sec_delta_pulses << " consecutive denied pulses differ by 1 sec. Re-aligning.");
+            ROS_WARN_STREAM("[dji_sdk Synchronizer] " << MIN_CONSECUTIVE_OFFSET_1_SEC_DELTA_PULSES << " consecutive denied pulses differ by 1 sec. Re-aligning.");
             consecutive_offset_1_sec_delta_pulses_ = 0;
           }
         }
@@ -68,6 +71,7 @@ public:
       else
         consecutive_offset_1_sec_delta_pulses_ = 0;
 
+      ROS_WARN_STREAM("[dji_sdk Synchronizer] consecutive_offset_1_sec_delta_pulses_ = " << consecutive_offset_1_sec_delta_pulses_);
       prev_diff_ = diff;
     }
 
@@ -96,7 +100,7 @@ public:
     return alignment_exists_;
   }
 
-  void setOnGround(const bool on_ground) { on_ground_ = on_ground; }
+  void setAllowReAlign(const bool allow_realign) { allow_realign_ = allow_realign; }
 
 private:
   static constexpr boost::chrono::seconds::rep S2NS{1000000000ll};
@@ -113,7 +117,7 @@ private:
   
   bool alignment_exists_;
   bool valid_pulse_arrived_since_prev_flag_;
-  bool on_ground_;
+  bool allow_realign_;
 
   static std::chrono::nanoseconds toChronoNsecs(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC)
   {

@@ -570,7 +570,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   flight_status.data = fs;
   p->flight_status_publisher.publish(flight_status);
   if (p->pps_sync_)
-    p->pps_sync_->setOnGround(fs == DJI::OSDK::VehicleStatus::FlightStatus::ON_GROUND);
+    p->pps_sync_->setAllowReAlign(fs != DJI::OSDK::VehicleStatus::FlightStatus::IN_AIR);
 
   Telemetry::TypeMap<Telemetry::TOPIC_VELOCITY>::type v_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_VELOCITY>();
