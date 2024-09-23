@@ -78,7 +78,7 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
 
     pps::Handler::CreationStatus pps_creation_status{pps::Handler::CreationStatus::OK};
     pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
-      nh,
+      nh_private,
       pps_device_path,
       pps_window_half_width_sec,
       pps_creation_status

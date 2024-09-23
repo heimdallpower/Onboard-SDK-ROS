@@ -20,7 +20,7 @@ public:
     const double pps_window_half_width_sec,
     pps::Handler::CreationStatus& creation_status_out
   ):
-  pulse_pub_{nh.advertise<std_msgs::Header>("~pulse", 10ul)},
+  pulse_pub_{nh.advertise<std_msgs::Header>("pulse", 10ul)},
   pps_handler_{pps_dev_path, creation_status_out},
   good_realign_pulsetrain_length_{0u},
   pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
