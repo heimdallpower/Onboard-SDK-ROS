@@ -5,6 +5,7 @@
 #include <drone_pps/include/drone_pps.hpp>
 #include <dji_telemetry.hpp>
 #include <ros/ros.h>
+#include <std_msgs/Header.h>
 
 namespace DJISDK
 {
@@ -14,10 +15,12 @@ class Synchronizer
 public:
   Synchronizer
   (
+    ros::NodeHandle& nh,
     const std::string& pps_dev_path,
     const double pps_window_half_width_sec,
     pps::Handler::CreationStatus& creation_status_out
   ):
+  pulse_pub_{nh.advertise<std_msgs::Header>("~pulse", 10ul)},
   pps_handler_{pps_dev_path, creation_status_out},
   good_realign_pulsetrain_length_{0u},
   pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
@@ -33,13 +36,15 @@ public:
     ros::Time& time_SYSTEM_out
   )
   {
+    const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
+
     bool new_pulse_arrived{false};
     std::chrono::system_clock::time_point last_rising_edge_time_SYSTEM;
     const bool pps_fetch_ok{pps_handler_.getLastAssertTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
 
     if (new_pulse_arrived)
     {
-      constexpr int_least64_t REALIGN_ACCEPTABLE_NSEC_DIFF{static_cast<int_least64_t>(0.0001 * S2NS)};
+      constexpr int_least64_t REALIGN_ACCEPTABLE_NSEC_DIFF{static_cast<int_least64_t>(0.00003 * S2NS)};
       constexpr size_t MIN_GOOD_PULSETRAIN_LENGTH{5};
 
       int_least64_t prev_pulse_diff_num_seconds;
@@ -54,20 +59,19 @@ public:
       boost::chrono::nanoseconds time_since_prev_good_pulse;
       const bool pulse_in_expected_window{isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM, time_since_prev_good_pulse)};
       const bool do_realign{!pulse_in_expected_window && (good_realign_pulsetrain_length_ >= MIN_GOOD_PULSETRAIN_LENGTH)};
-      const bool accept_new_pulse{
-        !alignment_exists_ ||
-        pulse_in_expected_window ||
-        do_realign
-      };
+      const bool accept_new_pulse{!alignment_exists_ || pulse_in_expected_window || do_realign};
 
       valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
       ROS_WARN_STREAM_COND(!pulse_in_expected_window, "[dji_sdk Synchronizer] New pulse outside of permitted window. New pulse came " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
       ROS_WARN_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
       ROS_WARN_STREAM_COND(accept_new_pulse && alignment_exists_, "[dji_sdk Synchronizer] Accepting new pulse " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
       ROS_WARN_STREAM_COND(accept_new_pulse && !alignment_exists_, "[dji_sdk Synchronizer] Accepting first pulse.");
+
+      std_msgs::Header pulse;
+      pps::chrono2secnsec(last_rising_edge_time_SYSTEM, pulse.stamp.sec, pulse.stamp.nsec);
+      pulse_pub_.publish(pulse);
     }
 
-    const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
     if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && valid_pulse_arrived_since_prev_flag_)
     {
       alignment_exists_                     = true;
@@ -95,6 +99,7 @@ public:
 private:
   static constexpr boost::chrono::seconds::rep S2NS{1000000000ll};
 
+  ros::Publisher pulse_pub_;
   pps::Handler pps_handler_;
   struct
   {
