@@ -62,10 +62,7 @@ public:
 
       valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
       ROS_WARN_STREAM_COND(!pulse_in_expected_window, "[dji_sdk Synchronizer] New pulse outside of permitted window. New pulse came " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
-      ROS_WARN_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
-      ROS_WARN_STREAM_COND(accept_new_pulse && alignment_exists_, "[dji_sdk Synchronizer] Accepting new pulse " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
-      ROS_WARN_STREAM_COND(accept_new_pulse && !alignment_exists_, "[dji_sdk Synchronizer] Accepting first pulse.");
-
+      ROS_INFO_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
       std_msgs::Header pulse;
       pps::chrono2secnsec(last_rising_edge_time_SYSTEM, pulse.stamp.sec, pulse.stamp.nsec);
       pulse_pub_.publish(pulse);
