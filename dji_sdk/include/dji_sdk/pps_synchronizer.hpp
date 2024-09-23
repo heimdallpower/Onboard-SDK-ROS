@@ -52,7 +52,7 @@ public:
       getTimeDiff(last_rising_edge_time_SYSTEM, prev_rising_edge_time_SYSTEM_, prev_pulse_diff_num_seconds, prev_pulse_diff_lag_nsec);
       const size_t diff_ok{static_cast<size_t>(prev_pulse_diff_num_seconds == 1ll && (std::abs(prev_pulse_diff_lag_nsec) < REALIGN_ACCEPTABLE_NSEC_DIFF))};
       good_realign_pulsetrain_length_ = static_cast<size_t>(allow_realign_) *  diff_ok * (good_realign_pulsetrain_length_ + diff_ok);
-      ROS_INFO_STREAM("[dji_sdk Synchronizer] good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ".");
+      ROS_INFO_STREAM("[dji_sdk Synchronizer] good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << " prev_pulse_diff_num_seconds=" << prev_pulse_diff_num_seconds << ", prev_pulse_diff_lag_nsec=" << prev_pulse_diff_lag_nsec << ", allow_realign_=" << std::boolalpha << allow_realign_);
 
       prev_rising_edge_time_SYSTEM_ = last_rising_edge_time_SYSTEM;
 
