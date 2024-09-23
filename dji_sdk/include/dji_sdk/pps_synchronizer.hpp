@@ -19,6 +19,7 @@ public:
     pps::Handler::CreationStatus& creation_status_out
   ):
   pps_handler_{pps_dev_path, creation_status_out},
+  good_realign_pulsetrain_length_{0u},
   pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
   alignment_exists_{false},
   valid_pulse_arrived_since_prev_flag_{false},
@@ -36,8 +37,6 @@ public:
     std::chrono::system_clock::time_point last_rising_edge_time_SYSTEM;
     const bool pps_fetch_ok{pps_handler_.getLastAssertTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
 
-    static std::chrono::system_clock::time_point prev_rising_edge_time_SYSTEM;
-    static size_t good_pulsetrain_length_{0u};
     if (new_pulse_arrived)
     {
       constexpr int_least64_t REALIGN_ACCEPTABLE_NSEC_DIFF{static_cast<int_least64_t>(0.0001 * S2NS)};
@@ -45,16 +44,16 @@ public:
 
       int_least64_t prev_pulse_diff_num_seconds;
       int_least64_t prev_pulse_diff_lag_nsec;
-      getTimeDiff(last_rising_edge_time_SYSTEM, prev_rising_edge_time_SYSTEM, prev_pulse_diff_num_seconds, prev_pulse_diff_lag_nsec);
+      getTimeDiff(last_rising_edge_time_SYSTEM, prev_rising_edge_time_SYSTEM_, prev_pulse_diff_num_seconds, prev_pulse_diff_lag_nsec);
       const size_t diff_ok{static_cast<size_t>(prev_pulse_diff_num_seconds == 1ll && (std::abs(prev_pulse_diff_lag_nsec) < REALIGN_ACCEPTABLE_NSEC_DIFF))};
-      good_pulsetrain_length_ = diff_ok * (good_pulsetrain_length_ + diff_ok);
-      ROS_INFO_STREAM("[dji_sdk Synchronizer] good_pulsetrain_length_=" << good_pulsetrain_length_ << ".");
+      good_realign_pulsetrain_length_ = static_cast<size_t>(allow_realign_) *  diff_ok * (good_realign_pulsetrain_length_ + diff_ok);
+      ROS_INFO_STREAM("[dji_sdk Synchronizer] good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ".");
 
-      prev_rising_edge_time_SYSTEM = last_rising_edge_time_SYSTEM;
+      prev_rising_edge_time_SYSTEM_ = last_rising_edge_time_SYSTEM;
 
       boost::chrono::nanoseconds time_since_prev_good_pulse;
       const bool pulse_in_expected_window{isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM, time_since_prev_good_pulse)};
-      const bool do_realign{!pulse_in_expected_window && (allow_realign_ && (good_pulsetrain_length_ >= MIN_GOOD_PULSETRAIN_LENGTH))};
+      const bool do_realign{!pulse_in_expected_window && (good_realign_pulsetrain_length_ >= MIN_GOOD_PULSETRAIN_LENGTH)};
       const bool accept_new_pulse{
         !alignment_exists_ ||
         pulse_in_expected_window ||
@@ -63,8 +62,9 @@ public:
 
       valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
       ROS_WARN_STREAM_COND(!pulse_in_expected_window, "[dji_sdk Synchronizer] New pulse outside of permitted window. New pulse came " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
-      ROS_WARN_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_pulsetrain_length_=" << good_pulsetrain_length_ << ").");
-      ROS_WARN_STREAM_COND(accept_new_pulse, "[dji_sdk Synchronizer] Accepting new pulse " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
+      ROS_WARN_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
+      ROS_WARN_STREAM_COND(accept_new_pulse && alignment_exists_, "[dji_sdk Synchronizer] Accepting new pulse " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
+      ROS_WARN_STREAM_COND(accept_new_pulse && !alignment_exists_, "[dji_sdk Synchronizer] Accepting first pulse.");
     }
 
     const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
@@ -102,6 +102,9 @@ private:
     std::chrono::nanoseconds HARDSYNC_FC;
     std::chrono::nanoseconds PACKAGE_FC;
   } in_use_rising_edge_time_;
+
+  std::chrono::system_clock::time_point prev_rising_edge_time_SYSTEM_;
+  size_t good_realign_pulsetrain_length_;
 
   const boost::chrono::seconds::rep pps_window_half_width_nsec_;
   
