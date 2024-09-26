@@ -25,7 +25,6 @@ public:
   good_realign_pulsetrain_length_{0u},
   pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
   alignment_exists_{false},
-  valid_pulse_arrived_since_prev_flag_{false},
   allow_realign_{false}
   {}
 
@@ -36,43 +35,46 @@ public:
     ros::Time& time_SYSTEM_out
   )
   {
-    const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
-
     bool new_pulse_arrived{false};
     std::chrono::system_clock::time_point last_rising_edge_time_SYSTEM;
     const bool pps_fetch_ok{pps_handler_.getLastAssertTime(last_rising_edge_time_SYSTEM, new_pulse_arrived)};
 
-    if (new_pulse_arrived)
+    if (new_pulse_arrived && pps_fetch_ok)
     {
       constexpr size_t MIN_GOOD_PULSETRAIN_LENGTH{5};
 
       int_least64_t prev_pulse_diff_num_seconds;
       int_least64_t prev_pulse_diff_lag_nsec;
-      getTimeDiff(last_rising_edge_time_SYSTEM, prev_rising_edge_time_SYSTEM_, prev_pulse_diff_num_seconds, prev_pulse_diff_lag_nsec);
+      pps::getTimeDiff(last_rising_edge_time_SYSTEM, prev_rising_edge_time_SYSTEM_, prev_pulse_diff_num_seconds, prev_pulse_diff_lag_nsec);
       const size_t diff_ok{static_cast<size_t>(prev_pulse_diff_num_seconds == 1ll && (std::abs(prev_pulse_diff_lag_nsec) < pps_window_half_width_nsec_))};
-      good_realign_pulsetrain_length_ = static_cast<size_t>(allow_realign_) *  diff_ok * (good_realign_pulsetrain_length_ + diff_ok);
-      ROS_INFO_STREAM("[dji_sdk Synchronizer] good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << " prev_pulse_diff_num_seconds=" << prev_pulse_diff_num_seconds << ", prev_pulse_diff_lag_nsec=" << prev_pulse_diff_lag_nsec << "(<" << pps_window_half_width_nsec_ << "), allow_realign_=" << std::boolalpha << allow_realign_);
-
+      good_realign_pulsetrain_length_ = static_cast<size_t>(allow_realign_) * diff_ok * (good_realign_pulsetrain_length_ + diff_ok);
       prev_rising_edge_time_SYSTEM_ = last_rising_edge_time_SYSTEM;
 
       boost::chrono::nanoseconds time_since_prev_good_pulse;
       const bool pulse_in_expected_window{isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM, time_since_prev_good_pulse)};
       const bool do_realign{!pulse_in_expected_window && (good_realign_pulsetrain_length_ >= MIN_GOOD_PULSETRAIN_LENGTH)};
-      const bool accept_new_pulse{!alignment_exists_ || pulse_in_expected_window || do_realign};
 
-      valid_pulse_arrived_since_prev_flag_ |= accept_new_pulse;
       ROS_WARN_STREAM_COND(!pulse_in_expected_window, "[dji_sdk Synchronizer] New pulse outside of permitted window. New pulse came " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
       ROS_INFO_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
+
       std_msgs::Header pulse;
       pps::chrono2secnsec(last_rising_edge_time_SYSTEM, pulse.stamp.sec, pulse.stamp.nsec);
+      if (!alignment_exists_ || pulse_in_expected_window || do_realign)
+      {
+        last_valid_rising_edge_time_SYSTEM_ = last_rising_edge_time_SYSTEM;
+        pulse.frame_id = "valid";
+      }
+      else
+        pulse.frame_id = "invalid";
+
       pulse_pub_.publish(pulse);
     }
 
-    if (pps_fetch_ok && stamp_HARDSYNC_FC.flag && valid_pulse_arrived_since_prev_flag_)
+    const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
+    if (stamp_HARDSYNC_FC.flag && (in_use_rising_edge_time_.SYSTEM != last_valid_rising_edge_time_SYSTEM_))
     {
       alignment_exists_                     = true;
-      valid_pulse_arrived_since_prev_flag_  = false;
-      in_use_rising_edge_time_.SYSTEM       = last_rising_edge_time_SYSTEM;
+      in_use_rising_edge_time_.SYSTEM       = last_valid_rising_edge_time_SYSTEM_;
       in_use_rising_edge_time_.HARDSYNC_FC  = time_HARDSYNC_FC;
       in_use_rising_edge_time_.PACKAGE_FC   = toChronoNsecs(stamp_PACKAGE_FC);
     }
@@ -103,14 +105,13 @@ private:
     std::chrono::nanoseconds HARDSYNC_FC;
     std::chrono::nanoseconds PACKAGE_FC;
   } in_use_rising_edge_time_;
-
+  std::chrono::system_clock::time_point last_valid_rising_edge_time_SYSTEM_;
   std::chrono::system_clock::time_point prev_rising_edge_time_SYSTEM_;
   size_t good_realign_pulsetrain_length_;
 
   const boost::chrono::seconds::rep pps_window_half_width_nsec_;
   
   bool alignment_exists_;
-  bool valid_pulse_arrived_since_prev_flag_;
   bool allow_realign_;
 
   static std::chrono::nanoseconds toChronoNsecs(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC)
@@ -141,29 +142,9 @@ private:
   {
     int_least64_t diff_num_seconds;
     int_least64_t diff_lag_nsec;
-    diff_out = getTimeDiff(curr_pulse_time, prev_valid_pulse_time, diff_num_seconds, diff_lag_nsec);
+    diff_out = pps::getTimeDiff(curr_pulse_time, prev_valid_pulse_time, diff_num_seconds, diff_lag_nsec);
     const bool pulse_in_expected_window{std::abs(diff_lag_nsec) < pps_window_half_width_nsec_ * diff_num_seconds};
     return pulse_in_expected_window;
-  }
-
-  /**
-   * Computers diff_quotient & diff_remainder such that
-   * a = b + diff_quotient_sec + (diff_remainder_nsec / 1'000'000'000)
-  */
-  template<typename TimeType>
-  static boost::chrono::nanoseconds getTimeDiff
-  (
-    const TimeType& a,
-    const TimeType& b,
-    int_least64_t& diff_quotient_sec,
-    int_least64_t& diff_remainder_nsec
-  )
-  {
-    const boost::chrono::nanoseconds diff{(a - b).count()};
-    const boost::chrono::seconds tmp{boost::chrono::round<boost::chrono::seconds>(diff)};
-    diff_quotient_sec   = tmp.count();
-    diff_remainder_nsec = (diff - boost::chrono::duration_cast<boost::chrono::nanoseconds>(tmp)).count();
-    return diff;
   }
 };
   
