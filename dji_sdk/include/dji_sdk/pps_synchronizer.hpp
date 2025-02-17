@@ -57,7 +57,7 @@ public:
       ROS_WARN_STREAM_COND(!pulse_in_expected_window, "[dji_sdk Synchronizer] New pulse outside of permitted window. New pulse came " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
       ROS_INFO_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
 
-      std_msgs::Header pulse;
+      static std_msgs::Header pulse{};
       pps::chrono2secnsec(last_rising_edge_time_SYSTEM, pulse.stamp.sec, pulse.stamp.nsec);
       if (!alignment_exists_ || pulse_in_expected_window || do_realign)
       {
@@ -68,6 +68,7 @@ public:
         pulse.frame_id = "invalid";
 
       pulse_pub_.publish(pulse);
+      ++pulse.seq;
     }
 
     const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
