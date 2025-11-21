@@ -102,10 +102,10 @@
 
 using namespace DJI::OSDK;
 
-class DJISDKNode
+class DJISDKNode: public rclcpp::Node
 {
 public:
-  DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
+  DJISDKNode(std::string&& name);
   ~DJISDKNode();
 
   enum TELEMETRY_TYPE
