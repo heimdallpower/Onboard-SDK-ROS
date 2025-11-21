@@ -95,11 +95,11 @@ void DJISDKNode::flightControl(uint8_t flag, float xSP, float ySP, float zSP, fl
   // The behavior of yaw should be the same in either frame
   if ( YAW == Control::YAW_ANGLE )
   {
-    tf::Matrix3x3 rotationSrc;
+    tf2::Matrix3x3 rotationSrc;
     rotationSrc.setRPY(0.0, 0.0, yawSP);
 
     //The last term should be transpose, but since it's symmetric ...
-    tf::Matrix3x3 rotationDes (R_ENU2NED * rotationSrc * R_FLU2FRD);
+    tf2::Matrix3x3 rotationDes (R_ENU2NED * rotationSrc * R_FLU2FRD);
 
     double temp1, temp2;
     rotationDes.getRPY(temp1, temp2, yawCmd);

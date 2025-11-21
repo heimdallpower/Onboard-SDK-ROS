@@ -15,7 +15,6 @@
 #include <dji_sdk/GPSRaw.h>
 #include <dji_sdk/BaroHeight.h>
 #include <dji_sdk/DateTimeStamped.h>
-#include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
 #include <dji_telemetry.hpp>
 
@@ -82,16 +81,16 @@ DJISDKNode::dataBroadcastCallback()
     rc_publisher.publish(rc_joy);
   }
 
-  tf::Matrix3x3 R_FRD2NED;
-  tf::Quaternion q_FLU2ENU;
+  tf2::Matrix3x3 R_FRD2NED;
+  tf2::Quaternion q_FLU2ENU;
 
   if (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_Q)
   {
-    R_FRD2NED.setRotation(tf::Quaternion(vehicle->broadcast->getQuaternion().q1,
+    R_FRD2NED.setRotation(tf2::Quaternion(vehicle->broadcast->getQuaternion().q1,
                                          vehicle->broadcast->getQuaternion().q2,
                                          vehicle->broadcast->getQuaternion().q3,
                                          vehicle->broadcast->getQuaternion().q0));
-    tf::Matrix3x3 R_FLU2ENU = R_ENU2NED.transpose() * R_FRD2NED * R_FLU2FRD;
+    tf2::Matrix3x3 R_FLU2ENU = R_ENU2NED.transpose() * R_FRD2NED * R_FLU2FRD;
     R_FLU2ENU.getRotation(q_FLU2ENU);
 
     geometry_msgs::QuaternionStamped q;
@@ -369,9 +368,9 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
       // Set the quaternion
       // This follows REP 103 to use FLU for body frame.
       // The quaternion is the rotation from body_FLU to world_ENU
-      tf::Matrix3x3 R_FRD2NED(tf::Quaternion(quat.q1, quat.q2, quat.q3, quat.q0));
-      tf::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
-      tf::Quaternion q_FLU2ENU;
+      tf2::Matrix3x3 R_FRD2NED(tf2::Quaternion(quat.q1, quat.q2, quat.q3, quat.q0));
+      tf2::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
+      tf2::Quaternion q_FLU2ENU;
       R_FLU2ENU.getRotation(q_FLU2ENU);
       // @note this mapping is tested
       local_rtk_pos_tf.transform.rotation.x = q_FLU2ENU.getX();
@@ -508,9 +507,9 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     // Set the quaternion
     // This follows REP 103 to use FLU for body frame.
     // The quaternion is the rotation from body_FLU to world_ENU
-    tf::Matrix3x3 R_FRD2NED(tf::Quaternion(quat.q1, quat.q2, quat.q3, quat.q0));
-    tf::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
-    tf::Quaternion q_FLU2ENU;
+    tf2::Matrix3x3 R_FRD2NED(tf2::Quaternion(quat.q1, quat.q2, quat.q3, quat.q0));
+    tf2::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
+    tf2::Quaternion q_FLU2ENU;
     R_FLU2ENU.getRotation(q_FLU2ENU);
     // @note this mapping is tested
     local_pos_tf.transform.rotation.x = q_FLU2ENU.getX();
@@ -744,9 +743,9 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   q.header.frame_id = "body_FLU";
   q.header.stamp    = msg_time;
 
-  tf::Matrix3x3 R_FRD2NED(tf::Quaternion(quat.q1, quat.q2, quat.q3, quat.q0));
-  tf::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
-  tf::Quaternion q_FLU2ENU;
+  tf2::Matrix3x3 R_FRD2NED(tf2::Quaternion(quat.q1, quat.q2, quat.q3, quat.q0));
+  tf2::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
+  tf2::Quaternion q_FLU2ENU;
   R_FLU2ENU.getRotation(q_FLU2ENU);
   // @note this mapping is tested
   q.quaternion.w = q_FLU2ENU.getW();
@@ -837,10 +836,10 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
    * Refer to:
    *   https://github.com/mavlink/mavros/blob/master/mavros/src/plugins/imu_pub.cpp
    */
-  tf::Matrix3x3 R_FRD2NED(tf::Quaternion(hardSync_FC.q.q1, hardSync_FC.q.q2,
+  tf2::Matrix3x3 R_FRD2NED(tf2::Quaternion(hardSync_FC.q.q1, hardSync_FC.q.q2,
                                          hardSync_FC.q.q3, hardSync_FC.q.q0));
-  tf::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
-  tf::Quaternion q_FLU2ENU;
+  tf2::Matrix3x3 R_FLU2ENU = p->R_ENU2NED.transpose() * R_FRD2NED * p->R_FLU2FRD;
+  tf2::Quaternion q_FLU2ENU;
   R_FLU2ENU.getRotation(q_FLU2ENU);
 
   synced_imu.orientation.w = q_FLU2ENU.getW();

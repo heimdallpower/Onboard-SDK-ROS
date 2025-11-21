@@ -4,8 +4,8 @@
 #include <boost/chrono/round.hpp>
 #include <drone_pps/include/drone_pps.hpp>
 #include <dji_telemetry.hpp>
-#include <ros/ros.h>
-#include <std_msgs/Header.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/header.hpp>
 
 namespace DJISDK
 {
@@ -15,12 +15,12 @@ class Synchronizer
 public:
   Synchronizer
   (
-    ros::NodeHandle& nh,
+    rclcpp::Node::SharedPtr node,
     const std::string& pps_dev_path,
     const double pps_window_half_width_sec,
     pps::Handler::CreationStatus& creation_status_out
   ):
-  pulse_pub_{nh.advertise<std_msgs::Header>("pulse", 10ul)},
+  pulse_pub_{node->create_publisher<std_msgs::msg::Header>("pulse", 10ul)},
   pps_handler_{pps_dev_path, creation_status_out},
   good_realign_pulsetrain_length_{0u},
   pps_window_half_width_nsec_{static_cast<boost::chrono::seconds::rep>(pps_window_half_width_sec * S2NS)},
@@ -67,7 +67,7 @@ public:
       else
         pulse.frame_id = "invalid";
 
-      pulse_pub_.publish(pulse);
+      pulse_pub_->publish(pulse);
       ++pulse.seq;
     }
 
@@ -98,7 +98,7 @@ public:
 private:
   static constexpr boost::chrono::seconds::rep S2NS{1000000000ll};
 
-  ros::Publisher pulse_pub_;
+  rclcpp::Publisher<std_msgs::msg::Header>::SharedPtr pulse_pub_;
   pps::Handler pps_handler_;
   struct
   {
