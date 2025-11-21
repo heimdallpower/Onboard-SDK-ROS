@@ -14,8 +14,8 @@
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   auto node{std::make_shared<DJISDKNODE>("dji_sdk")};
-  rclcpp::AsyncSpinner spinner(4); // Use 4 threads
-  spinner.start();
-  rclcpp::waitForShutdown();
+#warning("4-threaded async spinner used before. Bring back?");
+  rclcpp::spin(node);
+  rclcpp::shutdown();
   return 0;
 }
