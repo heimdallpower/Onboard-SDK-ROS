@@ -2,6 +2,11 @@
 
 #include <utility>
 
+#define C_PI (double)3.141592653589793
+
+inline constexpr double deg2rad(double deg) { return (deg) * ((C_PI) / (180.0)); }
+inline constexpr double rad2deg(double rad) { return (rad) * (180.0) / (C_PI); }
+
 namespace DJISDKGeometry
 {
   static constexpr double earth_equatorial_radius{6378137.0};

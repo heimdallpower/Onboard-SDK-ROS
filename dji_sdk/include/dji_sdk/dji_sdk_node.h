@@ -101,11 +101,6 @@
 //! SDK library
 #include <djiosdk/dji_vehicle.hpp>
 
-#define C_EARTH (double)6378137.0
-#define C_PI (double)3.141592653589793
-#define DEG2RAD(DEG) ((DEG) * ((C_PI) / (180.0)))
-#define RAD2DEG(RAD) ((RAD) * (180.0) / (C_PI))
-
 using namespace DJI::OSDK;
 
 class DJISDKNode
@@ -490,9 +485,6 @@ private:
   void alignRosTimeWithFlightController(ros::Time now_time, uint32_t tick);
   void setUpM100DefaultFreq(uint8_t freq[16]);
   void setUpA3N3DefaultFreq(uint8_t freq[16]);
-  void gpsConvertENU(double &ENU_x, double &ENU_y,
-                     double gps_t_lon, double gps_t_lat,
-                     double gps_r_lon, double gps_r_lat);
   std::string controlAuthorityErrorString(const uint32_t error_code);
 
   double local_pos_ref_latitude, local_pos_ref_longitude, local_pos_ref_altitude;

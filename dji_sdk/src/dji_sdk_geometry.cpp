@@ -1,5 +1,4 @@
 #include <cmath>
-#include <dji_sdk/dji_sdk_node.h>
 #include <dji_sdk/dji_sdk_geometry.h>
 
 static double wrapTo2Pi(double angle)
@@ -29,11 +28,13 @@ void DJISDKGeometry::gpsConvertENU(double &ENU_x, double &ENU_y,
                                    double gps_t_lon, double gps_t_lat,
                                    double gps_r_lon, double gps_r_lat)
 {
-  double d_lon = gps_t_lon - gps_r_lon;
-  double d_lat = gps_t_lat - gps_r_lat;
-  ENU_y = DEG2RAD(d_lat) * C_EARTH;
-  ENU_x = DEG2RAD(d_lon) * C_EARTH * std::cos(DEG2RAD(gps_t_lat));
-};
+  static constexpr double C_EARTH{6378137.0};
+
+  const double d_lon{gps_t_lon - gps_r_lon};
+  const double d_lat{gps_t_lat - gps_r_lat};
+  ENU_y = deg2rad(d_lat) * C_EARTH;
+  ENU_x = deg2rad(d_lon) * C_EARTH * std::cos(deg2rad(gps_t_lat));
+}
 
 static double radiusOfCurvaturePrimeVertical(double latitude)
 {
@@ -57,10 +58,10 @@ std::pair<double, double> DJISDKGeometry::GPS2ENU_WGS84(
   double ref_lat_GPS
 )
 {
-  lon_GPS = DEG2RAD(lon_GPS);
-  lat_GPS = DEG2RAD(lat_GPS);
-  ref_lon_GPS = DEG2RAD(ref_lon_GPS);
-  ref_lat_GPS = DEG2RAD(ref_lat_GPS);
+  lon_GPS = deg2rad(lon_GPS);
+  lat_GPS = deg2rad(lat_GPS);
+  ref_lon_GPS = deg2rad(ref_lon_GPS);
+  ref_lat_GPS = deg2rad(ref_lat_GPS);
 
   double r_n = radiusOfCurvaturePrimeVertical(ref_lat_GPS);
   double r_m = radiusOfCurvatureMeridian(r_n, ref_lat_GPS);

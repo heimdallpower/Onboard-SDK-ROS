@@ -158,7 +158,7 @@ DJISDKNode::dataBroadcastCallback()
       geometry_msgs::PointStamped local_pos;
       local_pos.header.frame_id = "/local";
       local_pos.header.stamp = now_time;
-      gpsConvertENU(local_pos.point.x, local_pos.point.y, gps_pos.longitude,
+      DJISDKGeometry::gpsConvertENU(local_pos.point.x, local_pos.point.y, gps_pos.longitude,
                        gps_pos.latitude, this->local_pos_ref_longitude, this->local_pos_ref_latitude);
       local_pos.point.z = gps_pos.altitude - this->local_pos_ref_altitude;
       /*!
@@ -325,7 +325,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
 
     dji_sdk::RTKYaw rtk_yaw;
     rtk_yaw.stamp = msg_time;
-    rtk_yaw.angle = DJISDKGeometry::RTKYawMeasurement2ENUYaw(DEG2RAD(static_cast<double>(rtk_telemetry_yaw)));
+    rtk_yaw.angle = DJISDKGeometry::RTKYawMeasurement2ENUYaw(deg2rad(static_cast<double>(rtk_telemetry_yaw)));
     rtk_yaw.solution_status = rtk_telemetry_yaw_info;
     p->rtk_yaw_publisher.publish(rtk_yaw);
 

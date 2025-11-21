@@ -47,8 +47,8 @@ void DJISDKNode::flightControl(uint8_t flag, float xSP, float ySP, float zSP, fl
     else
     {
       //ROS_DEBUG("GROUND frame is specified, but angle and rate command is generated in body frame");
-      xCmd = RAD2DEG(xSP);
-      yCmd = RAD2DEG(-ySP);
+      xCmd = rad2deg(xSP);
+      yCmd = rad2deg(-ySP);
     }
 
     // 1.2 Verticle Channel
@@ -76,8 +76,8 @@ void DJISDKNode::flightControl(uint8_t flag, float xSP, float ySP, float zSP, fl
     }
     else
     {
-      xCmd = RAD2DEG(xSP);
-      yCmd = RAD2DEG(-ySP);
+      xCmd = rad2deg(xSP);
+      yCmd = rad2deg(-ySP);
     }
 
     // 2.2 Vertical channel
@@ -104,11 +104,11 @@ void DJISDKNode::flightControl(uint8_t flag, float xSP, float ySP, float zSP, fl
     double temp1, temp2;
     rotationDes.getRPY(temp1, temp2, yawCmd);
 
-    yawCmd = RAD2DEG(yawCmd);
+    yawCmd = rad2deg(yawCmd);
   }
   else if (YAW == Control::YAW_RATE)
   {
-    yawCmd = RAD2DEG(-yawSP);
+    yawCmd = rad2deg(-yawSP);
   }
 
   Control::CtrlData ctrlData(flag, xCmd, yCmd, zCmd, yawCmd);
