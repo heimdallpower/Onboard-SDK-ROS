@@ -347,82 +347,81 @@ private:
 #endif
 
   //! flight control subscribers
-  ros::Subscriber flight_control_sub;
-
-  ros::Subscriber flight_control_position_yaw_sub;
-  ros::Subscriber flight_control_velocity_yawrate_sub;
-  ros::Subscriber flight_control_rollpitch_yawrate_vertpos_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_position_yaw_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_velocity_yawrate_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_rollpitch_yawrate_vertpos_sub;
 
   //! general subscribers
-  ros::Subscriber gimbal_angle_cmd_subscriber;
-  ros::Subscriber gimbal_speed_cmd_subscriber;
+  rclcpp::Subscription<dji_sdk::msg::Gimbal> gimbal_angle_cmd_subscriber;
+  rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped> gimbal_speed_cmd_subscriber;
   //! telemetry data publisher
-  ros::Publisher attitude_publisher;
-  ros::Publisher angularRate_publisher;
-  ros::Publisher acceleration_publisher;
-  ros::Publisher baro_height_publisher;
-  ros::Publisher battery_state_publisher;
-  ros::Publisher trigger_publisher;
-  ros::Publisher imu_publisher;
-  ros::Publisher flight_status_publisher;
-  ros::Publisher gps_health_publisher;
-  ros::Publisher gps_raw_publisher;
-  ros::Publisher gps_position_publisher;
-  ros::Publisher vo_position_publisher;
-  ros::Publisher height_publisher;
-  ros::Publisher velocity_publisher;
-  ros::Publisher from_mobile_data_publisher;
-  ros::Publisher from_payload_data_publisher;
-  ros::Publisher displaymode_publisher;
-  ros::Publisher rc_publisher;
-  ros::Publisher rc_connection_status_publisher;
-  ros::Publisher rtk_position_publisher;
-  ros::Publisher rtk_velocity_publisher;
-  ros::Publisher raw_rtk_yaw_publisher;
-  ros::Publisher rtk_yaw_publisher;
-  ros::Publisher rtk_position_info_publisher;
-  ros::Publisher rtk_yaw_info_publisher;
-  ros::Publisher rtk_connection_status_publisher;
-  ros::Publisher flight_anomaly_publisher;
+  rclcpp::Publisher<> attitude_publisher;
+  rclcpp::Publisher<> angularRate_publisher;
+  rclcpp::Publisher<> acceleration_publisher;
+  rclcpp::Publisher<> baro_height_publisher;
+  rclcpp::Publisher<> battery_state_publisher;
+  rclcpp::Publisher<> trigger_publisher;
+  rclcpp::Publisher<> imu_publisher;
+  rclcpp::Publisher<> flight_status_publisher;
+  rclcpp::Publisher<> gps_health_publisher;
+  rclcpp::Publisher<> gps_raw_publisher;
+  rclcpp::Publisher<> gps_position_publisher;
+  rclcpp::Publisher<> vo_position_publisher;
+  rclcpp::Publisher<> height_publisher;
+  rclcpp::Publisher<> velocity_publisher;
+  rclcpp::Publisher<> from_mobile_data_publisher;
+  rclcpp::Publisher<> from_payload_data_publisher;
+  rclcpp::Publisher<> displaymode_publisher;
+  rclcpp::Publisher<> rc_publisher;
+  rclcpp::Publisher<> rc_connection_status_publisher;
+  rclcpp::Publisher<> rtk_position_publisher;
+  rclcpp::Publisher<> rtk_velocity_publisher;
+  rclcpp::Publisher<> raw_rtk_yaw_publisher;
+  rclcpp::Publisher<> rtk_yaw_publisher;
+  rclcpp::Publisher<> rtk_position_info_publisher;
+  rclcpp::Publisher<> rtk_yaw_info_publisher;
+  rclcpp::Publisher<> rtk_connection_status_publisher;
+  rclcpp::Publisher<> flight_anomaly_publisher;
   //! Local (GPS) Position Publisher (Publishes local position in ENU frame)
-  ros::Publisher local_position_publisher;
-  ros::Publisher local_frame_ref_publisher;
-  ros::Publisher local_gps_position_publisher;
-  ros::Publisher gps_datetime_publisher;
+  rclcpp::Publisher<> local_position_publisher;
+  rclcpp::Publisher<> local_frame_ref_publisher;
+  rclcpp::Publisher<> local_gps_position_publisher;
+  rclcpp::Publisher<> gps_datetime_publisher;
   //! Local RTK Position Publisher (Publishes local RTK position in ENU frame)
-  ros::Publisher local_rtk_position_publisher;
-  ros::Publisher local_rtk_frame_ref_publisher;
+  rclcpp::Publisher<> local_rtk_position_publisher;
+  rclcpp::Publisher<> local_rtk_frame_ref_publisher;
   //! Local RTK/GPS fused position publisher (Publishes high rate local RTK position in ENU frame)
-  ros::Publisher local_rtk_fused_position_publisher;
-  ros::Publisher time_sync_nmea_publisher;
-  ros::Publisher time_sync_gps_utc_publisher;
-  ros::Publisher time_sync_fc_utc_publisher;
-  ros::Publisher time_sync_pps_source_publisher;
+  rclcpp::Publisher<> local_rtk_fused_position_publisher;
+  rclcpp::Publisher<> time_sync_nmea_publisher;
+  rclcpp::Publisher<> time_sync_gps_utc_publisher;
+  rclcpp::Publisher<> time_sync_fc_utc_publisher;
+  rclcpp::Publisher<std_msgs::msg::String> time_sync_pps_source_publisher;
   //! SDK control authority request ack data publisher
-  ros::Publisher control_authority_ack_publisher;
+  rclcpp::Publisher<dji_sdk::msg::UInt32Stamped> control_authority_ack_publisher;
 
-  ros::Publisher stamp_diff_5hz_pub;
-  ros::Publisher stamp_diff_50hz_pub;
-  ros::Publisher stamp_diff_100hz_pub;
-  ros::Publisher stamp_diff_400hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_5hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_50hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_100hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_400hz_pub;
 #ifdef COMPARE_PPS_AND_SOFTSYNC
-  ros::Publisher hardsync_debug_publisher;
-  ros::Publisher packagetimestamp_sub400Hz_debug_publisher;
-  ros::Publisher packagetimestamp_400Hz_debug_publisher;
-  ros::Publisher softsync_400hz_lag_pub;
-  ros::Publisher softsync_sub400hz_lag_pub;
+  rclcpp::Publisher<dji_sdk::msg::HardSyncDebugStamped> hardsync_debug_publisher;
+  rclcpp::Publisher<dji_sdk::msg::PackageTimestampDebugStamped> packagetimestamp_sub400Hz_debug_publisher;
+  rclcpp::Publisher<dji_sdk::msg::PackageTimestampDebugStamped> packagetimestamp_400Hz_debug_publisher;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> softsync_400hz_lag_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> softsync_sub400hz_lag_pub;
 #endif
 
 #ifdef ADVANCED_SENSING
-  ros::Publisher stereo_240p_front_left_publisher;
-  ros::Publisher stereo_240p_front_right_publisher;
-  ros::Publisher stereo_240p_down_front_publisher;
-  ros::Publisher stereo_240p_down_back_publisher;
-  ros::Publisher stereo_240p_front_depth_publisher;
-  ros::Publisher stereo_vga_front_left_publisher;
-  ros::Publisher stereo_vga_front_right_publisher;
-  ros::Publisher main_camera_stream_publisher;
-  ros::Publisher fpv_camera_stream_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_front_left_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_front_right_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_down_front_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_down_back_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_front_depth_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_vga_front_left_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_vga_front_right_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> main_camera_stream_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image> fpv_camera_stream_publisher;
 #endif
   //! constant
   const int WAIT_TIMEOUT           = 10;

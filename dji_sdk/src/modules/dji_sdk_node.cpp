@@ -230,22 +230,22 @@ bool DJISDKNode::initServices(ros::NodeHandle& nh) {
 bool
 DJISDKNode::initFlightControl(ros::NodeHandle& nh)
 {
-  flight_control_sub = nh.subscribe<sensor_msgs::Joy>(
+  flight_control_sub = nh.subscribe<sensor_msgs::msg::Joy>(
     "dji_sdk/flight_control_setpoint_generic", 10,
     &DJISDKNode::flightControlSetpointCallback,   this);
 
   flight_control_position_yaw_sub =
-    nh.subscribe<sensor_msgs::Joy>(
+    nh.subscribe<sensor_msgs::msg::Joy>(
       "dji_sdk/flight_control_setpoint_ENUposition_yaw", 10,
       &DJISDKNode::flightControlPxPyPzYawCallback, this);
 
   flight_control_velocity_yawrate_sub =
-    nh.subscribe<sensor_msgs::Joy>(
+    nh.subscribe<sensor_msgs::msg::Joy>(
       "dji_sdk/flight_control_setpoint_ENUvelocity_yawrate", 10,
       &DJISDKNode::flightControlVxVyVzYawrateCallback, this);
 
   flight_control_rollpitch_yawrate_vertpos_sub =
-    nh.subscribe<sensor_msgs::Joy>(
+    nh.subscribe<sensor_msgs::msg::Joy>(
       "dji_sdk/flight_control_setpoint_rollpitch_yawrate_zposition", 10,
       &DJISDKNode::flightControlRollPitchPzYawrateCallback, this);
 
@@ -275,9 +275,9 @@ DJISDKNode::activate(int l_app_id, std::string l_enc_key)
 bool
 DJISDKNode::initSubscriber(ros::NodeHandle& nh)
 {
-  gimbal_angle_cmd_subscriber = nh.subscribe<dji_sdk::Gimbal>(
+  gimbal_angle_cmd_subscriber = nh.subscribe<dji_sdk::msg::Gimbal>(
     "dji_sdk/gimbal_angle_cmd", 10, &DJISDKNode::gimbalAngleCtrlCallback, this);
-  gimbal_speed_cmd_subscriber = nh.subscribe<geometry_msgs::Vector3Stamped>(
+  gimbal_speed_cmd_subscriber = nh.subscribe<geometry_msgs::msg::Vector3Stamped>(
     "dji_sdk/gimbal_speed_cmd", 10, &DJISDKNode::gimbalSpeedCtrlCallback, this);
   return true;
 }
@@ -380,62 +380,62 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
       nh.advertise<dji_sdk::FCTimeInUTC>("dji_sdk/time_sync_fc_time_utc", 10);
 
   time_sync_pps_source_publisher =
-      nh.advertise<std_msgs::String>("dji_sdk/time_sync_pps_source", 10);
+      nh.advertise<std_msgs::msg::String>("dji_sdk/time_sync_pps_source", 10);
 
   stamp_diff_5hz_pub =
-    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/5hz", 5);
+    nh.advertise<dji_sdk::msg::Int64Stamped>("dji_sdk/stamp_diff/5hz", 5);
   stamp_diff_50hz_pub =
-    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/50hz", 50);
+    nh.advertise<dji_sdk::msg::Int64Stamped>("dji_sdk/stamp_diff/50hz", 50);
   stamp_diff_100hz_pub =
-    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/100hz", 100);
+    nh.advertise<dji_sdk::msg::Int64Stamped>("dji_sdk/stamp_diff/100hz", 100);
   stamp_diff_400hz_pub =
-    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/stamp_diff/400hz", 400);
+    nh.advertise<dji_sdk::msg::Int64Stamped>("dji_sdk/stamp_diff/400hz", 400);
 #ifdef COMPARE_PPS_AND_SOFTSYNC
   hardsync_debug_publisher =
-      nh.advertise<dji_sdk::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);
+      nh.advertise<dji_sdk::msg::HardSyncDebugStamped>("dji_sdk/hardsync_debug", 400);
 
   packagetimestamp_sub400Hz_debug_publisher =
-      nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/sub400hz", 400);
+      nh.advertise<dji_sdk::msg::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/sub400hz", 400);
 
   packagetimestamp_400Hz_debug_publisher =
-      nh.advertise<dji_sdk::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/400hz", 400);
+      nh.advertise<dji_sdk::msg::PackageTimestampDebugStamped>("dji_sdk/packagetimestamp_debug/400hz", 400);
 
   softsync_400hz_lag_pub =
-    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_400hz_lag_nsec", 400);
+    nh.advertise<dji_sdk::msg::Int64Stamped>("dji_sdk/softsync_400hz_lag_nsec", 400);
 
   softsync_sub400hz_lag_pub =
-    nh.advertise<dji_sdk::Int64Stamped>("dji_sdk/softsync_sub_400hz_lag_nsec", 400);
+    nh.advertise<dji_sdk::msg::Int64Stamped>("dji_sdk/softsync_sub_400hz_lag_nsec", 400);
 #endif
   control_authority_ack_publisher =
-      nh.advertise<dji_sdk::UInt32Stamped>("dji_sdk/control_authority_ack", 10);
+      nh.advertise<dji_sdk::msg::UInt32Stamped>("dji_sdk/control_authority_ack", 10);
 
 #ifdef ADVANCED_SENSING
   stereo_240p_front_left_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_front_left_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/stereo_240p_front_left_images", 10);
 
   stereo_240p_front_right_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_front_right_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/stereo_240p_front_right_images", 10);
 
   stereo_240p_down_front_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_down_front_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/stereo_240p_down_front_images", 10);
 
   stereo_240p_down_back_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_down_back_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/stereo_240p_down_back_images", 10);
 
   stereo_240p_front_depth_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_240p_front_depth_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/stereo_240p_front_depth_images", 10);
 
   stereo_vga_front_left_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_vga_front_left_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/stereo_vga_front_left_images", 10);
 
   stereo_vga_front_right_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/stereo_vga_front_right_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/stereo_vga_front_right_images", 10);
 
   main_camera_stream_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/main_camera_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/main_camera_images", 10);
 
   fpv_camera_stream_publisher =
-    nh.advertise<sensor_msgs::Image>("dji_sdk/fpv_camera_images", 10);
+    nh.advertise<sensor_msgs::msg::Image>("dji_sdk/fpv_camera_images", 10);
 #endif
 
 
