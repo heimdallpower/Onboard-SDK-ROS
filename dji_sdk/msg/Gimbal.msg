@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 # ts is the time it takes to achieve the desired angle,
 # so the shorter the time, the faster the gimbal rotates.
 int32 ts        # sec

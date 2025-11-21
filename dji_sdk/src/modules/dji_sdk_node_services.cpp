@@ -479,7 +479,7 @@ DJISDKNode::setupCameraStreamCallback(dji_sdk::SetupCameraStream::Request&  requ
   ROS_DEBUG("called cameraStreamCallback");
   bool result = false;
 
-  if(request.cameraType == request.FPV_CAM)
+  if(request.camera_type == request.FPV_CAM)
   {
     if(request.start == 1)
     {
@@ -491,7 +491,7 @@ DJISDKNode::setupCameraStreamCallback(dji_sdk::SetupCameraStream::Request&  requ
       result = true;
     }
   }
-  else if(request.cameraType == request.MAIN_CAM)
+  else if(request.camera_type == request.MAIN_CAM)
   {
     if(request.start == 1)
     {

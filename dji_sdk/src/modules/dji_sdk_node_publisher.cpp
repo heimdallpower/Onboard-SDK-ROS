@@ -416,9 +416,9 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   gps_raw_msg.alt               = 1e-3 * static_cast<double>(gps_raw_position.z);
   gps_raw_msg.var_pos_hor       = std::pow(1e-3 * gps_raw_details.hacc, 2.0);
   gps_raw_msg.var_pos_vert      = std::pow(1e-3 * gps_raw_details.gnssStatus, 2.0);
-  gps_raw_msg.velE              = 1e-2 * static_cast<double>(gps_raw_velocity.y);
-  gps_raw_msg.velN              = 1e-2 * static_cast<double>(gps_raw_velocity.x);
-  gps_raw_msg.velU              = -1e-2 * static_cast<double>(gps_raw_velocity.z);
+  gps_raw_msg.vel_e             = 1e-2 * static_cast<double>(gps_raw_velocity.y);
+  gps_raw_msg.vel_n             = 1e-2 * static_cast<double>(gps_raw_velocity.x);
+  gps_raw_msg.vel_u             = -1e-2 * static_cast<double>(gps_raw_velocity.z);
   gps_raw_msg.var_speed         = std::pow(1e-2 * gps_raw_details.sacc, 2.0);
   gps_raw_msg.hdop              = gps_raw_details.hdop;
   gps_raw_msg.pdop              = gps_raw_details.pdop;
@@ -612,12 +612,12 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     // This name does not follow the convention because we are not sure it is real NED.
     vo_pos.header.frame_id = "/ground_nav";
     vo_pos.header.stamp = msg_time;
-    vo_pos.x  = vo_position.x;
-    vo_pos.y       = vo_position.y;
-    vo_pos.z        = vo_position.z;
-    vo_pos.xHealth = vo_position.xHealth;
-    vo_pos.yHealth = vo_position.yHealth;
-    vo_pos.zHealth = vo_position.zHealth;
+    vo_pos.point.x  = vo_position.x;
+    vo_pos.point.y  = vo_position.y;
+    vo_pos.point.z  = vo_position.z;
+    vo_pos.health.x = vo_position.xHealth;
+    vo_pos.health.y = vo_position.yHealth;
+    vo_pos.health.z = vo_position.zHealth;
     p->vo_position_publisher.publish(vo_pos);
 
     Telemetry::TypeMap<Telemetry::TOPIC_RC_WITH_FLAG_DATA>::type rc_with_flag =
@@ -926,7 +926,7 @@ bool DJISDKNode::get400HzTimestamp
     hs_dbg.header.stamp                       = pps_time;
     hs_dbg.hardsync_timestamp.time2p5ms       = hardsyncTimeStamp.time2p5ms;
     hs_dbg.hardsync_timestamp.time1ns         = hardsyncTimeStamp.time1ns;
-    hs_dbg.hardsync_timestamp.resetTime2p5ms  = hardsyncTimeStamp.resetTime2p5ms;
+    hs_dbg.hardsync_timestamp.reset_time2p5ms = hardsyncTimeStamp.resetTime2p5ms;
     hs_dbg.hardsync_timestamp.index           = hardsyncTimeStamp.index;
     hs_dbg.hardsync_timestamp.flag            = hardsyncTimeStamp.flag;
     hardsync_debug_publisher.publish(hs_dbg);

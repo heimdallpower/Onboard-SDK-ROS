@@ -35,7 +35,7 @@ void DJISDKNode::GPSUTCTimeCallback(Vehicle *vehiclePtr,
   uint8_t rawBuf[length];
   memcpy(rawBuf, recvFrame.recvData.raw_ack_array, length);
   GPSUTC.stamp = ros::Time::now();
-  GPSUTC.UTCTimeData = std::string((char*)rawBuf, length).c_str();
+  GPSUTC.utc_time_data = std::string((char*)rawBuf, length).c_str();
   DJISDKNode *p = (DJISDKNode *) userData;
   p->time_sync_gps_utc_publisher.publish(GPSUTC);
 }
