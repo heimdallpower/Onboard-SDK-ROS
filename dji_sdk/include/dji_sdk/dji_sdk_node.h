@@ -123,13 +123,13 @@ public:
   };
 
 private:
-  bool initVehicle(ros::NodeHandle& nh_private);
-  bool initServices(ros::NodeHandle& nh);
-  bool initFlightControl(ros::NodeHandle& nh);
-  bool initSubscriber(ros::NodeHandle& nh);
-  bool initPublisher(ros::NodeHandle& nh);
-  bool initActions(ros::NodeHandle& nh);
-  bool initDataSubscribeFromFC(ros::NodeHandle& nh);
+  bool initVehicle(void);
+  bool initServices(void);
+  bool initFlightControl(void);
+  bool initSubscriber(void);
+  bool initPublisher(void);
+  bool initActions(void);
+  bool initDataSubscribeFromFC(void);
   void cleanUpSubscribeFromFC();
   bool validateSerialDevice(LinuxSerialDevice* serialDevice);
   bool isM100();
@@ -302,126 +302,126 @@ private:
   //! OSDK core
   Vehicle* vehicle;
   //! general service servers
-  ros::ServiceServer drone_activation_server;
-  ros::ServiceServer sdk_ctrlAuthority_server;
-  ros::ServiceServer camera_action_server;
+  rclcpp::Service<dji_sdk::srv::Activation>::SharedPtr drone_activation_server;
+  rclcpp::Service<dji_sdk::srv::SDKControlAuthority>::SharedPtr sdk_ctrlAuthority_server;
+  rclcpp::Service<dji_sdk::srv::CameraAction>::SharedPtr camera_action_server;
   //! flight control service servers
-  ros::ServiceServer drone_arm_server;
-  ros::ServiceServer drone_task_server;
+  rclcpp::Service<dji_sdk::srv::DroneArmControl>::SharedPtr drone_arm_server;
+  rclcpp::Service<dji_sdk::srv::DroneTaskControl>::SharedPtr drone_task_server;
   //! mfio service servers
-  ros::ServiceServer mfio_config_server;
-  ros::ServiceServer mfio_set_value_server;
+  rclcpp::Service<dji_sdk::srv::MFIOConfig>::SharedPtr mfio_config_server;
+  rclcpp::Service<dji_sdk::srv::MFIOSetValue>::SharedPtr mfio_set_value_server;
   //! mission service servers
   // mission manager
-  ros::ServiceServer mission_status_server;
+  rclcpp::Service<dji_sdk::srv::MissionStatus>::SharedPtr mission_status_server;
   // waypoint mission
-  ros::ServiceServer waypoint_upload_server;
-  ros::ServiceServer waypoint_action_server;
-  ros::ServiceServer waypoint_getInfo_server;
-  ros::ServiceServer waypoint_getSpeed_server;
-  ros::ServiceServer waypoint_setSpeed_server;
+  rclcpp::Service<dji_sdk::srv::MissionWpUpload>::SharedPtr waypoint_upload_server;
+  rclcpp::Service<dji_sdk::srv::MissionWpAction>::SharedPtr waypoint_action_server;
+  rclcpp::Service<dji_sdk::srv::MissionWpGetInfo>::SharedPtr waypoint_getInfo_server;
+  rclcpp::Service<dji_sdk::srv::MissionWpGetSpeed>::SharedPtr waypoint_getSpeed_server;
+  rclcpp::Service<dji_sdk::srv::MissionWpSetSpeed>::SharedPtr waypoint_setSpeed_server;
   // hotpoint mission
-  ros::ServiceServer hotpoint_upload_server;
-  ros::ServiceServer hotpoint_action_server;
-  ros::ServiceServer hotpoint_getInfo_server;
-  ros::ServiceServer hotpoint_setSpeed_server;
-  ros::ServiceServer hotpoint_resetYaw_server;
-  ros::ServiceServer hotpoint_setRadius_server;
+  rclcpp::Service<dji_sdk::srv::MissionHpUpload>::SharedPtr hotpoint_upload_server;
+  rclcpp::Service<dji_sdk::srv::MissionHpAction>::SharedPtr hotpoint_action_server;
+  rclcpp::Service<dji_sdk::srv::MissionHpGetInfo>::SharedPtr hotpoint_getInfo_server;
+  rclcpp::Service<dji_sdk::srv::MissionHpUpdateYawRate>::SharedPtr hotpoint_setSpeed_server;
+  rclcpp::Service<dji_sdk::srv::MissionHpResetYaw>::SharedPtr hotpoint_resetYaw_server;
+  rclcpp::Service<dji_sdk::srv::MissionHpUpdateRadius>::SharedPtr hotpoint_setRadius_server;
   // send data to mobile device
-  ros::ServiceServer send_to_mobile_server;
+  rclcpp::Service<dji_sdk::srv::SendMobileData>::SharedPtr send_to_mobile_server;
   // send data to payload device
-  ros::ServiceServer send_to_payload_server;
+  rclcpp::Service<dji_sdk::srv::SendPayloadData>::SharedPtr send_to_payload_server;
   //! hardsync service
-  ros::ServiceServer set_hardsync_server;
+  rclcpp::Service<dji_sdk::srv::SetHardSync>::SharedPtr set_hardsync_server;
   //! Query FW version of FC
-  ros::ServiceServer query_version_server;
+  rclcpp::Service<dji_sdk::srv::QueryDroneVersion>::SharedPtr query_version_server;
   //! Set Local position reference
-  ros::ServiceServer local_pos_ref_server;
+  rclcpp::Service<dji_sdk::srv::SetLocalPosRef>::SharedPtr local_pos_ref_server;
 
 #ifdef ADVANCED_SENSING
   //! stereo image service
-  ros::ServiceServer subscribe_stereo_240p_server;
-  ros::ServiceServer subscribe_stereo_depth_server;
-  ros::ServiceServer subscribe_stereo_vga_server;
-  ros::ServiceServer camera_stream_server;
+  rclcpp::Service<dji_sdk::srv::Stereo240pSubscription>::SharedPtr subscribe_stereo_240p_server;
+  rclcpp::Service<dji_sdk::srv::StereoDepthSubscription>::SharedPtr subscribe_stereo_depth_server;
+  rclcpp::Service<dji_sdk::srv::StereoVGASubscription>::SharedPtr subscribe_stereo_vga_server;
+  rclcpp::Service<dji_sdk::srv::SetupCameraStream>::SharedPtr camera_stream_server;
 #endif
 
   //! flight control subscribers
-  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_sub;
-  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_position_yaw_sub;
-  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_velocity_yawrate_sub;
-  rclcpp::Subscription<sensor_msgs::msg::Joy> flight_control_rollpitch_yawrate_vertpos_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr flight_control_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr flight_control_position_yaw_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr flight_control_velocity_yawrate_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr flight_control_rollpitch_yawrate_vertpos_sub;
 
   //! general subscribers
-  rclcpp::Subscription<dji_sdk::msg::Gimbal> gimbal_angle_cmd_subscriber;
-  rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped> gimbal_speed_cmd_subscriber;
+  rclcpp::Subscription<dji_sdk::msg::Gimbal>::SharedPtr gimbal_angle_cmd_subscriber;
+  rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr gimbal_speed_cmd_subscriber;
   //! telemetry data publisher
-  rclcpp::Publisher<> attitude_publisher;
-  rclcpp::Publisher<> angularRate_publisher;
-  rclcpp::Publisher<> acceleration_publisher;
-  rclcpp::Publisher<> baro_height_publisher;
-  rclcpp::Publisher<> battery_state_publisher;
-  rclcpp::Publisher<> trigger_publisher;
-  rclcpp::Publisher<> imu_publisher;
-  rclcpp::Publisher<> flight_status_publisher;
-  rclcpp::Publisher<> gps_health_publisher;
-  rclcpp::Publisher<> gps_raw_publisher;
-  rclcpp::Publisher<> gps_position_publisher;
-  rclcpp::Publisher<> vo_position_publisher;
-  rclcpp::Publisher<> height_publisher;
-  rclcpp::Publisher<> velocity_publisher;
-  rclcpp::Publisher<> from_mobile_data_publisher;
-  rclcpp::Publisher<> from_payload_data_publisher;
-  rclcpp::Publisher<> displaymode_publisher;
-  rclcpp::Publisher<> rc_publisher;
-  rclcpp::Publisher<> rc_connection_status_publisher;
-  rclcpp::Publisher<> rtk_position_publisher;
-  rclcpp::Publisher<> rtk_velocity_publisher;
-  rclcpp::Publisher<> raw_rtk_yaw_publisher;
-  rclcpp::Publisher<> rtk_yaw_publisher;
-  rclcpp::Publisher<> rtk_position_info_publisher;
-  rclcpp::Publisher<> rtk_yaw_info_publisher;
-  rclcpp::Publisher<> rtk_connection_status_publisher;
-  rclcpp::Publisher<> flight_anomaly_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::QuaternionStamped>::SharedPtr attitude_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr angularRate_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr acceleration_publisher;
+  rclcpp::Publisher<dji_sdk::msg::BaroHeight>::SharedPtr baro_height_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::BatteryState>::SharedPtr battery_state_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::TimeReference>::SharedPtr trigger_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_publisher;
+  rclcpp::Publisher<dji_sdk::msg::UInt8Stamped>::SharedPtr flight_status_publisher;
+  rclcpp::Publisher<dji_sdk::msg::GPSHealth>::SharedPtr gps_health_publisher;
+  rclcpp::Publisher<dji_sdk::msg::GPSRaw>::SharedPtr gps_raw_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr gps_position_publisher;
+  rclcpp::Publisher<dji_sdk::msg::VOPosition>::SharedPtr vo_position_publisher;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr height_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_publisher;
+  rclcpp::Publisher<dji_sdk::msg::MobileData>::SharedPtr from_mobile_data_publisher;
+  rclcpp::Publisher<dji_sdk::msg::PayloadData>::SharedPtr from_payload_data_publisher;
+  rclcpp::Publisher<dji_sdk::msg::UInt8Stamped>::SharedPtr displaymode_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr rc_publisher;
+  rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr rc_connection_status_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr rtk_position_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr rtk_velocity_publisher;
+  rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr raw_rtk_yaw_publisher;
+  rclcpp::Publisher<dji_sdk::msg::RTKYaw>::SharedPtr rtk_yaw_publisher;
+  rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr rtk_position_info_publisher;
+  rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr rtk_yaw_info_publisher;
+  rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr rtk_connection_status_publisher;
+  rclcpp::Publisher<dji_sdk::msg::FlightAnomaly>::SharedPtr flight_anomaly_publisher;
   //! Local (GPS) Position Publisher (Publishes local position in ENU frame)
-  rclcpp::Publisher<> local_position_publisher;
-  rclcpp::Publisher<> local_frame_ref_publisher;
-  rclcpp::Publisher<> local_gps_position_publisher;
-  rclcpp::Publisher<> gps_datetime_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr local_position_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr local_frame_ref_publisher;
+  rclcpp::Publisher<dji_sdk::msg::GPSPosition>::SharedPtr local_gps_position_publisher;
+  rclcpp::Publisher<dji_sdk::msg::DateTimeStamped>::SharedPtr gps_datetime_publisher;
   //! Local RTK Position Publisher (Publishes local RTK position in ENU frame)
-  rclcpp::Publisher<> local_rtk_position_publisher;
-  rclcpp::Publisher<> local_rtk_frame_ref_publisher;
+  rclcpp::Publisher<dji_sdk::msg::RTKPosition>::SharedPtr local_rtk_position_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr local_rtk_frame_ref_publisher;
   //! Local RTK/GPS fused position publisher (Publishes high rate local RTK position in ENU frame)
-  rclcpp::Publisher<> local_rtk_fused_position_publisher;
-  rclcpp::Publisher<> time_sync_nmea_publisher;
-  rclcpp::Publisher<> time_sync_gps_utc_publisher;
-  rclcpp::Publisher<> time_sync_fc_utc_publisher;
-  rclcpp::Publisher<std_msgs::msg::String> time_sync_pps_source_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr local_rtk_fused_position_publisher;
+  rclcpp::Publisher<nmea_msgs::msg::Sentence>::SharedPtr time_sync_nmea_publisher;
+  rclcpp::Publisher<dji_sdk::msg::GPSUTC>::SharedPtr time_sync_gps_utc_publisher;
+  rclcpp::Publisher<dji_sdk::msg::FCTimeInUTC>::SharedPtr time_sync_fc_utc_publisher;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr time_sync_pps_source_publisher;
   //! SDK control authority request ack data publisher
-  rclcpp::Publisher<dji_sdk::msg::UInt32Stamped> control_authority_ack_publisher;
+  rclcpp::Publisher<dji_sdk::msg::UInt32Stamped>::SharedPtr control_authority_ack_publisher;
 
-  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_5hz_pub;
-  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_50hz_pub;
-  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_100hz_pub;
-  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> stamp_diff_400hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped>::SharedPtr stamp_diff_5hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped>::SharedPtr stamp_diff_50hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped>::SharedPtr stamp_diff_100hz_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped>::SharedPtr stamp_diff_400hz_pub;
 #ifdef COMPARE_PPS_AND_SOFTSYNC
-  rclcpp::Publisher<dji_sdk::msg::HardSyncDebugStamped> hardsync_debug_publisher;
-  rclcpp::Publisher<dji_sdk::msg::PackageTimestampDebugStamped> packagetimestamp_sub400Hz_debug_publisher;
-  rclcpp::Publisher<dji_sdk::msg::PackageTimestampDebugStamped> packagetimestamp_400Hz_debug_publisher;
-  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> softsync_400hz_lag_pub;
-  rclcpp::Publisher<dji_sdk::msg::Int64Stamped> softsync_sub400hz_lag_pub;
+  rclcpp::Publisher<dji_sdk::msg::HardSyncDebugStamped>::SharedPtr hardsync_debug_publisher;
+  rclcpp::Publisher<dji_sdk::msg::PackageTimestampDebugStamped>::SharedPtr packagetimestamp_sub400Hz_debug_publisher;
+  rclcpp::Publisher<dji_sdk::msg::PackageTimestampDebugStamped>::SharedPtr packagetimestamp_400Hz_debug_publisher;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped>::SharedPtr softsync_400hz_lag_pub;
+  rclcpp::Publisher<dji_sdk::msg::Int64Stamped>::SharedPtr softsync_sub400hz_lag_pub;
 #endif
 
 #ifdef ADVANCED_SENSING
-  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_front_left_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_front_right_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_down_front_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_down_back_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_240p_front_depth_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_vga_front_left_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> stereo_vga_front_right_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> main_camera_stream_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::Image> fpv_camera_stream_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_240p_front_left_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_240p_front_right_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_240p_down_front_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_240p_down_back_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_240p_front_depth_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_vga_front_left_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr stereo_vga_front_right_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr main_camera_stream_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr fpv_camera_stream_publisher;
 #endif
   //! constant
   const int WAIT_TIMEOUT           = 10;
