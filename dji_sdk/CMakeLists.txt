@@ -24,7 +24,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-find_package(djiosdk-core QUIET)
+# find_package(djiosdk-core QUIET)
 find_package(DJIOSDK REQUIRED)
 
 ## System dependencies are found with CMake's conventions
@@ -198,12 +198,21 @@ install(DIRECTORY include/
   DESTINATION include
 )
 
+install(
+  TARGETS dji_sdk_geometry
+  EXPORT dji_sdk_geometryTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/launch
 )
 
 ament_export_include_directories(include)
-ament_export_libraries(dji_sdk_geometry)
+ament_export_targets(dji_sdk_geometryTargets HAS_LIBRARY_TARGET)
 ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()
