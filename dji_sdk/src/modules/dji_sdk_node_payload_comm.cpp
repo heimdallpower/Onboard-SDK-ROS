@@ -17,7 +17,7 @@ void DJISDKNode::SDKfromPayloadDataCallback(Vehicle *vehicle, RecvContainer recv
 
 void DJISDKNode::fromPayloadDataCallback(RecvContainer recvFrame) {
   int dataLength = recvFrame.recvInfo.len - OpenProtocol::PackageMin - 2;
-    ROS_INFO( "Received payload Data of len %d\n", recvFrame.recvInfo.len);
+    RCLCPP_INFO(get_logger(), "Received payload Data of len %d", recvFrame.recvInfo.len);
     dji_sdk::msg::PayloadData payload_data;
     payload_data.data.assign(recvFrame.recvData.raw_ack_array,recvFrame.recvData.raw_ack_array + dataLength);
     from_payload_data_publisher->publish(payload_data);
@@ -25,8 +25,8 @@ void DJISDKNode::fromPayloadDataCallback(RecvContainer recvFrame) {
 
 bool DJISDKNode::sendToPayloadCallback(const dji_sdk::srv::SendPayloadData::Request::SharedPtr request,
                                       dji_sdk::srv::SendPayloadData::Response::SharedPtr response){
-  ROS_INFO("Send data to payload, size : %ldbytes", request.data.size());
-  vehicle->payloadDevice->sendDataToPSDK(&request.data[0], request.data.size());
-  response.result = true;
+  RCLCPP_INFO(get_logger(), "Send data to payload, size : %ldbytes", request->data.size());
+  vehicle->payloadDevice->sendDataToPSDK(&request->data[0], request->data.size());
+  response->result = true;
   return true;
 }

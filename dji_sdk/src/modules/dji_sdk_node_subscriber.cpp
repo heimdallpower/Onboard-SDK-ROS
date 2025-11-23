@@ -12,9 +12,9 @@
 #include <dji_sdk/dji_sdk_node.h>
 
 void
-DJISDKNode::gimbalAngleCtrlCallback(const dji_sdk::Gimbal::ConstPtr& msg)
+DJISDKNode::gimbalAngleCtrlCallback(const dji_sdk::msg::Gimbal::SharedPtr msg)
 {
-  ROS_DEBUG("called gimbalAngleCtrlCallback");
+  RCLCPP_DEBUG(get_logger(), "called gimbalAngleCtrlCallback");
 
   DJI::OSDK::Gimbal::AngleData angle_data;
   //! OSDK takes 0.1 sec as unit
@@ -29,9 +29,9 @@ DJISDKNode::gimbalAngleCtrlCallback(const dji_sdk::Gimbal::ConstPtr& msg)
 
 void
 DJISDKNode::gimbalSpeedCtrlCallback(
-  const geometry_msgs::Vector3Stamped::ConstPtr& msg)
+  const geometry_msgs::msg::Vector3Stamped::SharedPtr msg)
 {
-  ROS_DEBUG("called gimbalAngleCtrlCallback");
+  RCLCPP_DEBUG(get_logger(), "called gimbalSpeedCtrlCallback");
 
   DJI::OSDK::Gimbal::SpeedData speed_data;
   //! OSDK takes 0.1 deg as unit
