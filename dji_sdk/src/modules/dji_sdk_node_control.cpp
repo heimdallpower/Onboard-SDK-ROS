@@ -117,7 +117,7 @@ void DJISDKNode::flightControl(uint8_t flag, float xSP, float ySP, float zSP, fl
 
 void
 DJISDKNode::flightControlSetpointCallback(
-  const sensor_msgs::Joy::ConstPtr& pMsg)
+  const sensor_msgs::msg::Joy::SharedPtr pMsg)
 { 
   float xSP    = pMsg->axes[0];
   float ySP    = pMsg->axes[1];
@@ -130,7 +130,7 @@ DJISDKNode::flightControlSetpointCallback(
 
 void
 DJISDKNode::flightControlPxPyPzYawCallback(
-  const sensor_msgs::Joy::ConstPtr& pMsg)
+  const sensor_msgs::msg::Joy::SharedPtr pMsg)
 {
   uint8_t flag = (Control::VERTICAL_POSITION |
                   Control::HORIZONTAL_POSITION |
@@ -148,7 +148,7 @@ DJISDKNode::flightControlPxPyPzYawCallback(
 
 void
 DJISDKNode::flightControlVxVyVzYawrateCallback(
-  const sensor_msgs::Joy::ConstPtr& pMsg)
+  const sensor_msgs::msg::Joy::SharedPtr pMsg)
 {
   uint8_t flag = (Control::VERTICAL_VELOCITY |
                   Control::HORIZONTAL_VELOCITY |
@@ -165,7 +165,7 @@ DJISDKNode::flightControlVxVyVzYawrateCallback(
 
 void
 DJISDKNode::flightControlRollPitchPzYawrateCallback(
-  const sensor_msgs::Joy::ConstPtr& pMsg)
+  const sensor_msgs::msg::Joy::SharedPtr pMsg)
 {
   uint8_t flag = (Control::VERTICAL_POSITION |
                   Control::HORIZONTAL_ANGLE |
