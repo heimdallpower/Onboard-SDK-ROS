@@ -20,6 +20,7 @@ public:
     const double pps_window_half_width_sec,
     pps::Handler::CreationStatus& creation_status_out
   ):
+  node_{node},
   pulse_pub_{node->create_publisher<std_msgs::msg::Header>("pulse", 10ul)},
   pps_handler_{pps_dev_path, creation_status_out},
   good_realign_pulsetrain_length_{0u},
@@ -32,7 +33,7 @@ public:
   (
     const DJI::OSDK::Telemetry::SyncTimestamp& stamp_HARDSYNC_FC,
     const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC,
-    ros::Time& time_SYSTEM_out
+    rclcpp::Time& time_SYSTEM_out
   )
   {
     bool new_pulse_arrived{false};
@@ -54,11 +55,11 @@ public:
       const bool pulse_in_expected_window{isPulseInExpectedWindow(last_rising_edge_time_SYSTEM, in_use_rising_edge_time_.SYSTEM, time_since_prev_good_pulse)};
       const bool do_realign{!pulse_in_expected_window && (good_realign_pulsetrain_length_ >= MIN_GOOD_PULSETRAIN_LENGTH)};
 
-      ROS_WARN_STREAM_COND(!pulse_in_expected_window, "[dji_sdk Synchronizer] New pulse outside of permitted window. New pulse came " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
-      ROS_INFO_STREAM_COND(do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
+      RCLCPP_WARN_STREAM_EXPRESSION(node_->get_logger(), !pulse_in_expected_window, "[dji_sdk Synchronizer] New pulse outside of permitted window. New pulse came " << time_since_prev_good_pulse.count() * 1e-9 << " secs after previous good pulse.");
+      RCLCPP_INFO_STREAM_EXPRESSION(node_->get_logger(), do_realign, "[dji_sdk Synchronizer] Accepting offset pulse due to sufficiently long good pulsetrain (good_realign_pulsetrain_length_=" << good_realign_pulsetrain_length_ << ").");
 
-      static std_msgs::Header pulse{};
-      pps::chrono2secnsec(last_rising_edge_time_SYSTEM, pulse.stamp.sec, pulse.stamp.nsec);
+      static std_msgs::msg::Header pulse{};
+      pulse.stamp = rclcpp::Time(std::chrono::duration_cast<std::chrono::nanoseconds>(last_rising_edge_time_SYSTEM.time_since_epoch()).count());
       if (!alignment_exists_ || pulse_in_expected_window || do_realign)
       {
         last_valid_rising_edge_time_SYSTEM_ = last_rising_edge_time_SYSTEM;
@@ -68,7 +69,6 @@ public:
         pulse.frame_id = "invalid";
 
       pulse_pub_->publish(pulse);
-      ++pulse.seq;
     }
 
     const auto time_HARDSYNC_FC{toChronoNsecs(stamp_HARDSYNC_FC)};
@@ -81,15 +81,15 @@ public:
     }
 
     const auto time_SYSTEM{pps::getSystemTime(time_HARDSYNC_FC, in_use_rising_edge_time_.HARDSYNC_FC, in_use_rising_edge_time_.SYSTEM)};
-    pps::chrono2secnsec(time_SYSTEM, time_SYSTEM_out.sec, time_SYSTEM_out.nsec);
+    time_SYSTEM_out = rclcpp::Time(std::chrono::duration_cast<std::chrono::nanoseconds>(time_SYSTEM.time_since_epoch()).count());
     return alignment_exists_;
   }
 
-  bool getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC, ros::Time& time_SYSTEM_out)
+  bool getSystemTime(const DJI::OSDK::Telemetry::TimeStamp& stamp_PACKAGE_FC, rclcpp::Time& time_SYSTEM_out)
   {
     const auto time_PACKAGE_FC{toChronoNsecs(stamp_PACKAGE_FC)};
     const auto time_SYSTEM{pps::getSystemTime(time_PACKAGE_FC, in_use_rising_edge_time_.PACKAGE_FC, in_use_rising_edge_time_.SYSTEM)};
-    pps::chrono2secnsec(time_SYSTEM, time_SYSTEM_out.sec, time_SYSTEM_out.nsec);
+    time_SYSTEM_out = rclcpp::Time(std::chrono::duration_cast<std::chrono::nanoseconds>(time_SYSTEM.time_since_epoch()).count());
     return alignment_exists_;
   }
 
@@ -98,6 +98,7 @@ public:
 private:
   static constexpr boost::chrono::seconds::rep S2NS{1000000000ll};
 
+  rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<std_msgs::msg::Header>::SharedPtr pulse_pub_;
   pps::Handler pps_handler_;
   struct

@@ -11,14 +11,15 @@
 
 #include <dji_sdk/dji_sdk_node.h>
 #include <dji_sdk/dji_sdk_geometry.h>
-#include <dji_sdk/GPSHealth.h>
-#include <dji_sdk/GPSRaw.h>
-#include <dji_sdk/BaroHeight.h>
-#include <dji_sdk/DateTimeStamped.h>
-#include <sensor_msgs/Joy.h>
+#include <dji_sdk/msg/gps_health.hpp>
+#include <dji_sdk/msg/gps_raw.hpp>
+#include <dji_sdk/msg/baro_height.hpp>
+#include <dji_sdk/msg/date_time_stamped.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 #include <dji_telemetry.hpp>
+#include <rcpputils/asserts.hpp>
 
-#define _TICK2ROSTIME(tick) (ros::Duration((double)(tick) / 1000.0))
+#define _TICK2ROSTIME(tick) (rclcpp::Duration::from_seconds((double)(tick) / 1000.0))
 
 template<int PackageID>
 void unpack
@@ -30,24 +31,24 @@ void unpack
 )
 {
   assert(DJISDKNode::PACKAGE_ID_5HZ <= PackageID && PackageID <= DJISDKNode::PACKAGE_ID_400HZ);
-  ROS_ASSERT(*raw_ack_array == PackageID);
+  rcpputils::assert_true(*raw_ack_array == PackageID);
   *node_out               = reinterpret_cast<DJISDKNode*>(userData);
   package_time_stamp_out  = *(reinterpret_cast<Telemetry::TimeStamp*>(raw_ack_array + 1));
 }
 
 template<int PackageID>
-void publishStampDiff(const ros::Time& stamp, ros::Publisher& pub)
+void publishStampDiff(const rclcpp::Time& stamp, rclcpp::Publisher<dji_sdk::msg::Int64Stamped>::SharedPtr pub)
 {
-  static ros::Time prev_stamp{stamp};
-  dji_sdk::Int64Stamped stamp_diff_nsecs;
+  static rclcpp::Time prev_stamp{stamp};
+  dji_sdk::msg::Int64Stamped stamp_diff_nsecs;
   stamp_diff_nsecs.header.stamp = stamp;
-  stamp_diff_nsecs.data = (stamp - prev_stamp).toNSec();
-  pub.publish(stamp_diff_nsecs);
+  stamp_diff_nsecs.data = (stamp - prev_stamp).nanoseconds();
+  pub->publish(stamp_diff_nsecs);
   prev_stamp = stamp;
 }
 
 void
-DJISDKNode::SDKBroadcastCallback(Vehicle* vehicle, RecvContainer recvFrame,
+DJISDKNode::SDKBroadcastCallback(Vehicle*, RecvContainer,
                                  DJI::OSDK::UserData userData)
 {
   ((DJISDKNode*)userData)->dataBroadcastCallback();
@@ -58,7 +59,7 @@ DJISDKNode::dataBroadcastCallback()
 {
   using namespace DJI::OSDK;
 
-  ros::Time now_time = ros::Time::now();
+  rclcpp::Time now_time = this->now();
 
   uint16_t data_enable_flag = vehicle->broadcast->getPassFlag();
 
@@ -66,7 +67,7 @@ DJISDKNode::dataBroadcastCallback()
                          (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::A3_HAS_RC);
   if (flag_has_rc)
   {
-    sensor_msgs::Joy rc_joy;
+    sensor_msgs::msg::Joy rc_joy;
     rc_joy.header.stamp    = now_time;
     rc_joy.header.frame_id = "rc";
 
@@ -78,7 +79,7 @@ DJISDKNode::dataBroadcastCallback()
 
     rc_joy.axes.push_back(static_cast<float>(vehicle->broadcast->getRC().mode));
     rc_joy.axes.push_back(static_cast<float>(vehicle->broadcast->getRC().gear));
-    rc_publisher.publish(rc_joy);
+    rc_publisher->publish(rc_joy);
   }
 
   tf2::Matrix3x3 R_FRD2NED;
@@ -93,7 +94,7 @@ DJISDKNode::dataBroadcastCallback()
     tf2::Matrix3x3 R_FLU2ENU = R_ENU2NED.transpose() * R_FRD2NED * R_FLU2FRD;
     R_FLU2ENU.getRotation(q_FLU2ENU);
 
-    geometry_msgs::QuaternionStamped q;
+    geometry_msgs::msg::QuaternionStamped q;
     q.header.stamp = now_time;
     q.header.frame_id = "body_FLU";
 
@@ -102,14 +103,14 @@ DJISDKNode::dataBroadcastCallback()
     q.quaternion.y = q_FLU2ENU.getY();
     q.quaternion.z = q_FLU2ENU.getZ();
 
-    attitude_publisher.publish(q);
+    attitude_publisher->publish(q);
   }
 
   if ( (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_Q) &&
        (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_W) &&
        (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_A))
   {
-    sensor_msgs::Imu imu;
+    sensor_msgs::msg::Imu imu;
 
     imu.header.frame_id = "body_FLU";
     imu.header.stamp    = now_time;
@@ -129,18 +130,18 @@ DJISDKNode::dataBroadcastCallback()
     imu.orientation.y = q_FLU2ENU.getY();
     imu.orientation.z = q_FLU2ENU.getZ();
 
-    imu_publisher.publish(imu);
+    imu_publisher->publish(imu);
   }
 
   if (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_POS)
   {
     DJI::OSDK::Telemetry::GlobalPosition global_pos =
       vehicle->broadcast->getGlobalPosition();
-    std_msgs::UInt8 gps_health;
-    gps_health.data = global_pos.health;
-    gps_health_publisher.publish(gps_health);
+    dji_sdk::msg::GPSHealth gps_health;
+    gps_health.health = global_pos.health;
+    gps_health_publisher->publish(gps_health);
 
-    sensor_msgs::NavSatFix gps_pos;
+    sensor_msgs::msg::NavSatFix gps_pos;
     gps_pos.header.stamp    = now_time;
     gps_pos.header.frame_id = "gps";
     gps_pos.latitude        = global_pos.latitude * 180 / C_PI;
@@ -150,11 +151,11 @@ DJISDKNode::dataBroadcastCallback()
     this->current_gps_longitude = gps_pos.longitude;
     this->current_gps_altitude = gps_pos.altitude;
     this->current_gps_health = global_pos.health;
-    gps_position_publisher.publish(gps_pos);
+    gps_position_publisher->publish(gps_pos);
 
     if(local_pos_ref_set)
     {
-      geometry_msgs::PointStamped local_pos;
+      geometry_msgs::msg::PointStamped local_pos;
       local_pos.header.frame_id = "/local";
       local_pos.header.stamp = now_time;
       DJISDKGeometry::gpsConvertENU(local_pos.point.x, local_pos.point.y, gps_pos.longitude,
@@ -166,24 +167,24 @@ DJISDKNode::dataBroadcastCallback()
       *       in ENU Frame
       */
 
-      this->local_position_publisher.publish(local_pos);
+      this->local_position_publisher->publish(local_pos);
     }
 
-    std_msgs::Float32 agl_height;
+    std_msgs::msg::Float32 agl_height;
     agl_height.data = global_pos.height;
-    height_publisher.publish(agl_height);
+    height_publisher->publish(agl_height);
   }
 
   if (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_V)
   {
-    geometry_msgs::Vector3Stamped velocity;
+    geometry_msgs::msg::Vector3Stamped velocity;
     velocity.header.stamp    = now_time;
     velocity.header.frame_id = "world_ENU";
 
     velocity.vector.x = vehicle->broadcast->getVelocity().y;
     velocity.vector.y = vehicle->broadcast->getVelocity().x;
     velocity.vector.z = vehicle->broadcast->getVelocity().z;
-    velocity_publisher.publish(velocity);
+    velocity_publisher->publish(velocity);
   }
 
   uint16_t flag_has_battery =
@@ -192,7 +193,7 @@ DJISDKNode::dataBroadcastCallback()
 
   if ( flag_has_battery )
   {
-    sensor_msgs::BatteryState msg_battery_state;
+    sensor_msgs::msg::BatteryState msg_battery_state;
     msg_battery_state.header.stamp = now_time;
     msg_battery_state.capacity = vehicle->broadcast->getBatteryInfo().capacity;
     msg_battery_state.voltage  = vehicle->broadcast->getBatteryInfo().voltage;
@@ -204,7 +205,7 @@ DJISDKNode::dataBroadcastCallback()
     msg_battery_state.power_supply_status = msg_battery_state.POWER_SUPPLY_STATUS_UNKNOWN;
     msg_battery_state.power_supply_technology = msg_battery_state.POWER_SUPPLY_TECHNOLOGY_UNKNOWN;
     msg_battery_state.present = (vehicle->broadcast->getBatteryInfo().voltage!=0);
-    battery_state_publisher.publish(msg_battery_state);
+    battery_state_publisher->publish(msg_battery_state);
   }
 
   uint16_t flag_has_status =
@@ -216,9 +217,9 @@ DJISDKNode::dataBroadcastCallback()
     Telemetry::TypeMap<Telemetry::TOPIC_STATUS_FLIGHT>::type fs =
       vehicle->broadcast->getStatus().flight;
 
-    std_msgs::UInt8 flight_status;
+    dji_sdk::msg::UInt8Stamped flight_status;
     flight_status.data = fs;
-    flight_status_publisher.publish(flight_status);
+    flight_status_publisher->publish(flight_status);
   }
 }
 
@@ -226,15 +227,15 @@ void
 DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
                             DJI::OSDK::UserData userData)
 {
-  const ros::Time now{ros::Time::now()};
   DJISDKNode *p;
   Telemetry::TimeStamp packageTimeStamp;
   unpack<DJISDKNode::PACKAGE_ID_5HZ>(
     userData, recvFrame.recvData.raw_ack_array,
     &p, packageTimeStamp
   );
+  const rclcpp::Time now{p->now()};
 
-  ros::Time msg_time;
+  rclcpp::Time msg_time;
   if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
     return;
 
@@ -242,7 +243,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   const uint32_t gps_time{vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_TIME>()};
   // gps_date format: YYYYMMSS
   // gps_time format: hhmmss
-  dji_sdk::DateTimeStamped gps_datetime;
+  dji_sdk::msg::DateTimeStamped gps_datetime;
   gps_datetime.header.stamp   = msg_time;
   gps_datetime.datetime.year  = gps_date / 10000ul;
   gps_datetime.datetime.mon   = (gps_date % 10000ul) / 100ul;
@@ -250,12 +251,12 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   gps_datetime.datetime.hour  = gps_time / 10000ul;
   gps_datetime.datetime.min   = (gps_time % 10000ul) / 100ul;
   gps_datetime.datetime.sec   = (gps_time % 10000ul) % 100ul;
-  p->gps_datetime_publisher.publish(gps_datetime);
+  p->gps_datetime_publisher->publish(gps_datetime);
 
   //TODO: publish gps detail data if needed
   Telemetry::TypeMap<Telemetry::TOPIC_BATTERY_INFO>::type battery_info=
     vehicle->subscribe->getValue<Telemetry::TOPIC_BATTERY_INFO>();
-  sensor_msgs::BatteryState msg_battery_state;
+  sensor_msgs::msg::BatteryState msg_battery_state;
   msg_battery_state.header.stamp            = msg_time;
   msg_battery_state.capacity                = static_cast<float>(battery_info.capacity) / 1000.f; // mAh -> Ah
   msg_battery_state.voltage                 = static_cast<float>(battery_info.voltage) / 1000.f;  // mV -> V
@@ -267,7 +268,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   msg_battery_state.power_supply_status     = msg_battery_state.POWER_SUPPLY_STATUS_UNKNOWN;
   msg_battery_state.power_supply_technology = msg_battery_state.POWER_SUPPLY_TECHNOLOGY_UNKNOWN;
   msg_battery_state.present                 = (battery_info.voltage!=0);
-  p->battery_state_publisher.publish(msg_battery_state);
+  p->battery_state_publisher->publish(msg_battery_state);
 
   if(p->rtkSupport)
   {
@@ -298,66 +299,66 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
     Telemetry::TypeMap<Telemetry::TOPIC_ALTITUDE_FUSIONED>::type fused_altitude =
           vehicle->subscribe->getValue<Telemetry::TOPIC_ALTITUDE_FUSIONED>();
 
-    sensor_msgs::NavSatFix rtk_position;
+    sensor_msgs::msg::NavSatFix rtk_position;
     rtk_position.header.stamp = msg_time;
     rtk_position.latitude = rtk_telemetry_position.latitude;
     rtk_position.longitude = rtk_telemetry_position.longitude;
     rtk_position.altitude = rtk_telemetry_position.HFSL;
-    p->rtk_position_publisher.publish(rtk_position);
+    p->rtk_position_publisher->publish(rtk_position);
     // Set the member variables for current RTK position
     p->current_rtk_latitude = rtk_telemetry_position.latitude;
     p->current_rtk_longitude = rtk_telemetry_position.longitude;
     p->current_rtk_altitude = rtk_telemetry_position.HFSL;
 
     //! Velocity converted to m/s and ENU coordinates to conform to REP103.
-    geometry_msgs::Vector3Stamped rtk_velocity;
+    geometry_msgs::msg::Vector3Stamped rtk_velocity;
     rtk_velocity.header.frame_id = "world_ENU";
     rtk_velocity.header.stamp = msg_time;
     rtk_velocity.vector.x = (rtk_telemetry_velocity.y)/100;
     rtk_velocity.vector.y = (rtk_telemetry_velocity.x)/100;
     rtk_velocity.vector.z = (-rtk_telemetry_velocity.z)/100;
-    p->rtk_velocity_publisher.publish(rtk_velocity);
+    p->rtk_velocity_publisher->publish(rtk_velocity);
 
-    std_msgs::Int16 raw_rtk_yaw;
+    std_msgs::msg::Int16 raw_rtk_yaw;
     raw_rtk_yaw.data = rtk_telemetry_yaw;
-    p->raw_rtk_yaw_publisher.publish(raw_rtk_yaw);
+    p->raw_rtk_yaw_publisher->publish(raw_rtk_yaw);
 
-    dji_sdk::RTKYaw rtk_yaw;
+    dji_sdk::msg::RTKYaw rtk_yaw;
     rtk_yaw.stamp = msg_time;
     rtk_yaw.angle = DJISDKGeometry::RTKYawMeasurement2ENUYaw(deg2rad(static_cast<double>(rtk_telemetry_yaw)));
     rtk_yaw.solution_status = rtk_telemetry_yaw_info;
-    p->rtk_yaw_publisher.publish(rtk_yaw);
+    p->rtk_yaw_publisher->publish(rtk_yaw);
 
-    std_msgs::UInt8 rtk_yaw_info;
+    std_msgs::msg::UInt8 rtk_yaw_info;
     rtk_yaw_info.data = (int)rtk_telemetry_yaw_info;
-    p->rtk_yaw_info_publisher.publish(rtk_yaw_info);
+    p->rtk_yaw_info_publisher->publish(rtk_yaw_info);
 
-    std_msgs::UInt8 rtk_position_info;
+    std_msgs::msg::UInt8 rtk_position_info;
     rtk_position_info.data = (int)rtk_telemetry_position_info;
-    p->rtk_position_info_publisher.publish(rtk_position_info);
+    p->rtk_position_info_publisher->publish(rtk_position_info);
     p->current_rtk_health = (int)rtk_telemetry_position_info;
 
-    //std_msgs::UInt8 rtk_connection_status;
+    //std_msgs::msg::UInt8 rtk_connection_status;
     //rtk_connection_status.data = (rtk_telemetry_connect_status.rtkConnected == 1) ? 1 : 0;
-    //p->rtk_connection_status_publisher.publish(rtk_connection_status);
+    //p->rtk_connection_status_publisher->publish(rtk_connection_status);
 
     if(p->local_rtk_pos_ref_set)
     {
       // Send local rtk position
-      dji_sdk::RTKPosition local_rtk_pos;
+      dji_sdk::msg::RTKPosition local_rtk_pos;
       local_rtk_pos.header.frame_id = "world_ENU";
       local_rtk_pos.header.stamp = rtk_position.header.stamp;
-      p->gpsConvertENU(local_rtk_pos.point.x, local_rtk_pos.point.y, rtk_position.longitude,
+      DJISDKGeometry::gpsConvertENU(local_rtk_pos.point.x, local_rtk_pos.point.y, rtk_position.longitude,
           rtk_position.latitude, p->local_rtk_pos_ref_longitude, p->local_rtk_pos_ref_latitude);
       local_rtk_pos.point.z = rtk_position.altitude - p->local_rtk_pos_ref_altitude;
       local_rtk_pos.solution_status = rtk_telemetry_position_info;
       // Local position is published in ENU Frame
       // This follows the REP 103 to use ENU for short-range Cartesian representations
-      p->local_rtk_position_publisher.publish(local_rtk_pos);
+      p->local_rtk_position_publisher->publish(local_rtk_pos);
 
       // Also publish the local RTK position as a tf
-      static tf2_ros::TransformBroadcaster br_rtk;
-      geometry_msgs::TransformStamped local_rtk_pos_tf;
+      static tf2_ros::TransformBroadcaster br_rtk{*p};
+      geometry_msgs::msg::TransformStamped local_rtk_pos_tf;
       // Set local position
       local_rtk_pos_tf.header.stamp = rtk_position.header.stamp;
       local_rtk_pos_tf.header.frame_id = "world_ENU";
@@ -403,7 +404,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_DETAILS>()
   };
 
-  dji_sdk::GPSRaw gps_raw_msg;
+  dji_sdk::msg::GPSRaw gps_raw_msg;
   /**
    * NOTE: Untested conversions
    * SEE: dji_telemetry_doc.hpp for units of data on topic 'TOPIC_GPS_POSITION' & 'TOPIC_GPS_VELOCITY'
@@ -423,7 +424,7 @@ DJISDKNode::publish5HzData(Vehicle *vehicle, RecvContainer recvFrame,
   gps_raw_msg.pdop              = gps_raw_details.pdop;
   gps_raw_msg.fix               = gps_raw_details.fix;
   gps_raw_msg.num_visible_sats  = gps_raw_details.NSV;
-  p->gps_raw_publisher.publish(gps_raw_msg);
+  p->gps_raw_publisher->publish(gps_raw_msg);
 
   publishStampDiff<DJISDKNode::PACKAGE_ID_5HZ>(msg_time, p->stamp_diff_5hz_pub);
 }
@@ -432,15 +433,15 @@ void
 DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
                             DJI::OSDK::UserData userData)
 {
-  const ros::Time now{ros::Time::now()};
   DJISDKNode *p;
   Telemetry::TimeStamp packageTimeStamp;
   unpack<DJISDKNode::PACKAGE_ID_50HZ>(
     userData, recvFrame.recvData.raw_ack_array,
     &p, packageTimeStamp
   );
+  const rclcpp::Time now{p->now()};
 
-  ros::Time msg_time;
+  rclcpp::Time msg_time;
   if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
     return;
 
@@ -451,7 +452,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
           vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
 
-  sensor_msgs::NavSatFix gps_pos;
+  sensor_msgs::msg::NavSatFix gps_pos;
   gps_pos.header.frame_id = "/gps";
   gps_pos.header.stamp    = msg_time;
   gps_pos.latitude        = fused_gps.latitude * 180.0 / C_PI;   //degree
@@ -460,24 +461,24 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   p->current_gps_latitude = gps_pos.latitude;
   p->current_gps_longitude = gps_pos.longitude;
   p->current_gps_altitude = fused_altitude;
-  p->gps_position_publisher.publish(gps_pos);
+  p->gps_position_publisher->publish(gps_pos);
 
   Telemetry::TypeMap<Telemetry::TOPIC_GPS_CONTROL_LEVEL>::type gps_ctrl_level=
     vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_CONTROL_LEVEL>();
 
-  dji_sdk::GPSHealth gps_health;
+  dji_sdk::msg::GPSHealth gps_health;
   gps_health.header.stamp     = msg_time;
   gps_health.health           = gps_ctrl_level;
-  p->gps_health_publisher.publish(gps_health);
+  p->gps_health_publisher->publish(gps_health);
 
   p->current_gps_health = gps_ctrl_level;
 
   if(p->local_pos_ref_set)
   {
-    geometry_msgs::PointStamped local_pos;
+    geometry_msgs::msg::PointStamped local_pos;
     local_pos.header.frame_id = "/local";
     local_pos.header.stamp = gps_pos.header.stamp;
-    p->gpsConvertENU(local_pos.point.x, local_pos.point.y, gps_pos.longitude,
+    DJISDKGeometry::gpsConvertENU(local_pos.point.x, local_pos.point.y, gps_pos.longitude,
         gps_pos.latitude, p->local_pos_ref_longitude, p->local_pos_ref_latitude);
     local_pos.point.z = gps_pos.altitude - p->local_pos_ref_altitude;
    /*!
@@ -485,18 +486,18 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
    *       short-range Cartesian representations. Local position is published
    *       in ENU Frame
    */
-    p->local_position_publisher.publish(local_pos);
+    p->local_position_publisher->publish(local_pos);
 
-    dji_sdk::GPSPosition local_gps_pos;
+    dji_sdk::msg::GPSPosition local_gps_pos;
     local_gps_pos.header = local_pos.header;
     local_gps_pos.header.frame_id = "world_ENU";
     local_gps_pos.point = local_pos.point;
     local_gps_pos.health = gps_ctrl_level;
-    p->local_gps_position_publisher.publish(local_gps_pos);
+    p->local_gps_position_publisher->publish(local_gps_pos);
 
     // Also publish the local position as a tf
-    static tf2_ros::TransformBroadcaster br;
-    geometry_msgs::TransformStamped local_pos_tf;
+    static tf2_ros::TransformBroadcaster br{*p};
+    geometry_msgs::msg::TransformStamped local_pos_tf;
     // Set local position
     local_pos_tf.header.stamp = gps_pos.header.stamp;
     local_pos_tf.header.frame_id = "world_ENU";
@@ -523,20 +524,20 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     // There will be jumps in the position everytime the bias is updated (when RTK position is received)
     if(p->local_rtk_pos_ref_set)
     {
-      geometry_msgs::PointStamped local_pos_fused;
+      geometry_msgs::msg::PointStamped local_pos_fused;
       local_pos_fused.header.frame_id = "/local_fused";
       local_pos_fused.header.stamp = gps_pos.header.stamp;
-      p->gpsConvertENU(local_pos_fused.point.x, local_pos_fused.point.y,
+      DJISDKGeometry::gpsConvertENU(local_pos_fused.point.x, local_pos_fused.point.y,
           gps_pos.longitude - p->bias_gps_longitude, gps_pos.latitude - p->bias_gps_latitude,
           p->local_rtk_pos_ref_longitude, p->local_rtk_pos_ref_latitude);
       local_pos_fused.point.z = (gps_pos.altitude - p->bias_gps_altitude) - p->local_rtk_pos_ref_altitude;
       // Local position is published in ENU Frame
       // This follows the REP 103 to use ENU for short-range Cartesian representations
-      p->local_rtk_fused_position_publisher.publish(local_pos_fused);
+      p->local_rtk_fused_position_publisher->publish(local_pos_fused);
 
       // Also publish the fused local position as a tf
-      static tf2_ros::TransformBroadcaster br;
-      geometry_msgs::TransformStamped local_pos_fused_tf;
+      static tf2_ros::TransformBroadcaster br{*p};
+      geometry_msgs::msg::TransformStamped local_pos_fused_tf;
       // Set local position
       local_pos_fused_tf.header.stamp = gps_pos.header.stamp;
       local_pos_fused_tf.header.frame_id = "world_ENU";
@@ -557,23 +558,23 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
 
   Telemetry::TypeMap<Telemetry::TOPIC_HEIGHT_FUSION>::type fused_height =
     vehicle->subscribe->getValue<Telemetry::TOPIC_HEIGHT_FUSION>();
-  std_msgs::Float32 height;
+  std_msgs::msg::Float32 height;
   height.data = fused_height;
-  p->height_publisher.publish(height);
+  p->height_publisher->publish(height);
 
   Telemetry::TypeMap<Telemetry::TOPIC_STATUS_FLIGHT>::type fs =
     vehicle->subscribe->getValue<Telemetry::TOPIC_STATUS_FLIGHT>();
 
-  dji_sdk::UInt8Stamped flight_status;
+  dji_sdk::msg::UInt8Stamped flight_status;
   flight_status.header.stamp = msg_time;
   flight_status.data = fs;
-  p->flight_status_publisher.publish(flight_status);
+  p->flight_status_publisher->publish(flight_status);
   if (p->pps_sync_)
     p->pps_sync_->setAllowReAlign(fs != DJI::OSDK::VehicleStatus::FlightStatus::IN_AIR);
 
   Telemetry::TypeMap<Telemetry::TOPIC_VELOCITY>::type v_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_VELOCITY>();
-  geometry_msgs::Vector3Stamped v;
+  geometry_msgs::msg::Vector3Stamped v;
   // v_FC has 2 fields, data and info. The latter contains the health
 
 
@@ -586,17 +587,17 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   v.vector.x = v_FC.data.y;  //x, y are swapped from NE to EN
   v.vector.y = v_FC.data.x;
   v.vector.z = v_FC.data.z; //z sign is already U
-  p->velocity_publisher.publish(v);
+  p->velocity_publisher->publish(v);
 
   // See dji_sdk.h for details about display_mode
 
   Telemetry::TypeMap<Telemetry::TOPIC_STATUS_DISPLAYMODE>::type dm =
     vehicle->subscribe->getValue<Telemetry::TOPIC_STATUS_DISPLAYMODE>();
 
-  dji_sdk::UInt8Stamped status_dm;
+  dji_sdk::msg::UInt8Stamped status_dm;
   status_dm.header.stamp = msg_time;
   status_dm.data = dm;
-  p->displaymode_publisher.publish(status_dm);
+  p->displaymode_publisher->publish(status_dm);
 
   /*!
    * note: Since FW version 3.3.0 and SDK version 3.7, we expose all the button on the LB2 RC
@@ -607,7 +608,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     Telemetry::TypeMap<Telemetry::TOPIC_POSITION_VO>::type vo_position =
           vehicle->subscribe->getValue<Telemetry::TOPIC_POSITION_VO>();
 
-    dji_sdk::VOPosition vo_pos;
+    dji_sdk::msg::VOPosition vo_pos;
     // This name does not follow the convention because we are not sure it is real NED.
     vo_pos.header.frame_id = "/ground_nav";
     vo_pos.header.stamp = msg_time;
@@ -617,12 +618,12 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     vo_pos.health.x = vo_position.xHealth;
     vo_pos.health.y = vo_position.yHealth;
     vo_pos.health.z = vo_position.zHealth;
-    p->vo_position_publisher.publish(vo_pos);
+    p->vo_position_publisher->publish(vo_pos);
 
     Telemetry::TypeMap<Telemetry::TOPIC_RC_WITH_FLAG_DATA>::type rc_with_flag =
             vehicle->subscribe->getValue<Telemetry::TOPIC_RC_WITH_FLAG_DATA>();
 
-    sensor_msgs::Joy rc_joy;
+    sensor_msgs::msg::Joy rc_joy;
     rc_joy.header.stamp    = msg_time;
     rc_joy.header.frame_id = "rc";
 
@@ -656,22 +657,22 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
       rc_joy.axes.push_back(static_cast<float>(rc.gear*1.0));
     }
 
-    p->rc_publisher.publish(rc_joy);
+    p->rc_publisher->publish(rc_joy);
 
     bool temp;
     temp = rc_with_flag.flag.skyConnected && rc_with_flag.flag.groundConnected;
 
-    std_msgs::UInt8 rc_connected;
+    std_msgs::msg::UInt8 rc_connected;
     rc_connected.data = temp ? 1 : 0;
-    p->rc_connection_status_publisher.publish(rc_connected);
+    p->rc_connection_status_publisher->publish(rc_connected);
 
     // Publish flight anomaly if FC is supported
     Telemetry::TypeMap<Telemetry::TOPIC_FLIGHT_ANOMALY>::type flight_anomaly_data =
             vehicle->subscribe->getValue<Telemetry::TOPIC_FLIGHT_ANOMALY>();
 
-    dji_sdk::FlightAnomaly flight_anomaly_msg;
+    dji_sdk::msg::FlightAnomaly flight_anomaly_msg;
     flight_anomaly_msg.data = *(reinterpret_cast<uint32_t*>(&flight_anomaly_data));
-    p->flight_anomaly_publisher.publish(flight_anomaly_msg);
+    p->flight_anomaly_publisher->publish(flight_anomaly_msg);
   }
   else
   {
@@ -696,7 +697,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     Telemetry::TypeMap<Telemetry::TOPIC_RC>::type rc =
             vehicle->subscribe->getValue<Telemetry::TOPIC_RC>();
 
-    sensor_msgs::Joy rc_joy;
+    sensor_msgs::msg::Joy rc_joy;
     rc_joy.header.stamp    = msg_time;
     rc_joy.header.frame_id = "rc";
 
@@ -708,7 +709,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     rc_joy.axes.push_back(static_cast<float>(rc.throttle / 10000.0));
     rc_joy.axes.push_back(static_cast<float>(rc.mode*1.0));
     rc_joy.axes.push_back(static_cast<float>(rc.gear*1.0));
-    p->rc_publisher.publish(rc_joy);
+    p->rc_publisher->publish(rc_joy);
   }
 
   publishStampDiff<DJISDKNode::PACKAGE_ID_50HZ>(msg_time, p->stamp_diff_50hz_pub);
@@ -718,7 +719,6 @@ void
 DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                   DJI::OSDK::UserData userData)
 {
-  const ros::Time now{ros::Time::now()};
   DJISDKNode *p;
   Telemetry::TimeStamp packageTimeStamp;
 
@@ -726,14 +726,15 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
     userData, recvFrame.recvData.raw_ack_array,
     &p, packageTimeStamp
   );
+  const rclcpp::Time now{p->now()};
 
-  ros::Time msg_time;
+  rclcpp::Time msg_time;
   if (!p->getSub400HzTimestamp(packageTimeStamp, now, msg_time))
     return;
 
   Telemetry::TypeMap<Telemetry::TOPIC_QUATERNION>::type quat =
           vehicle->subscribe->getValue<Telemetry::TOPIC_QUATERNION>();
-  geometry_msgs::QuaternionStamped q;
+  geometry_msgs::msg::QuaternionStamped q;
 
   /*!
    * note: We are now following REP 103 to use FLU for
@@ -752,12 +753,12 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   q.quaternion.x = q_FLU2ENU.getX();
   q.quaternion.y = q_FLU2ENU.getY();
   q.quaternion.z = q_FLU2ENU.getZ();
-  p->attitude_publisher.publish(q);
+  p->attitude_publisher->publish(q);
 
   Telemetry::TypeMap<Telemetry::TOPIC_ANGULAR_RATE_FUSIONED>::type w_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_ANGULAR_RATE_FUSIONED>();
 
-  geometry_msgs::Vector3Stamped angular_rate;
+  geometry_msgs::msg::Vector3Stamped angular_rate;
 
   /*!
    * note: We are now following REP 103 to use FLU for
@@ -769,11 +770,11 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   angular_rate.vector.x        =  w_FC.x;
   angular_rate.vector.y        = -w_FC.y; //y,z sign are flipped from RD to LU
   angular_rate.vector.z        = -w_FC.z;
-  p->angularRate_publisher.publish(angular_rate);
+  p->angularRate_publisher->publish(angular_rate);
 
   Telemetry::TypeMap<Telemetry::TOPIC_ACCELERATION_GROUND>::type a_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_ACCELERATION_GROUND>();
-  geometry_msgs::Vector3Stamped acceleration;
+  geometry_msgs::msg::Vector3Stamped acceleration;
 
   /*!
    * note: 1. We are now following REP 103 to use ENU for
@@ -789,13 +790,13 @@ DJISDKNode::publish100HzData(Vehicle *vehicle, RecvContainer recvFrame,
   acceleration.vector.x        = a_FC.y;  //x, y are swapped from NE to EN
   acceleration.vector.y        = a_FC.x;
   acceleration.vector.z        = a_FC.z;  //z sign is already U
-  p->acceleration_publisher.publish(acceleration);
+  p->acceleration_publisher->publish(acceleration);
 
-  dji_sdk::BaroHeight baro_height;
+  dji_sdk::msg::BaroHeight baro_height;
   baro_height.header.frame_id           = "baro";
   baro_height.header.stamp              = msg_time;
   baro_height.height_above_sea_level_m  = vehicle->subscribe->getValue<Telemetry::TOPIC_ALTITUDE_BAROMETER>();
-  p->baro_height_publisher.publish(baro_height);
+  p->baro_height_publisher->publish(baro_height);
 
   publishStampDiff<DJISDKNode::PACKAGE_ID_100HZ>(msg_time, p->stamp_diff_100hz_pub);
 }
@@ -804,22 +805,22 @@ void
 DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                   DJI::OSDK::UserData userData)
 {
-  const ros::Time now{ros::Time::now()};
   DJISDKNode *p;
   Telemetry::TimeStamp packageTimeStamp;
   unpack<DJISDKNode::PACKAGE_ID_400HZ>(
     userData, recvFrame.recvData.raw_ack_array,
     &p, packageTimeStamp
   );
+  const rclcpp::Time now{p->now()};
 
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hardSync_FC =
     vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
 
-  ros::Time msg_time;
+  rclcpp::Time msg_time;
   if (!p->get400HzTimestamp(hardSync_FC.ts, packageTimeStamp, now, msg_time))
     return;
 
-  sensor_msgs::Imu synced_imu;
+  sensor_msgs::msg::Imu synced_imu;
   synced_imu.header.frame_id  = "body_FLU";
   synced_imu.header.stamp     = msg_time;
   //y, z signs are flipped from RD to LU for rate and accel
@@ -847,7 +848,7 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
   synced_imu.orientation.y = q_FLU2ENU.getY();
   synced_imu.orientation.z = q_FLU2ENU.getZ();
 
-  p->imu_publisher.publish(synced_imu);
+  p->imu_publisher->publish(synced_imu);
 
   publishStampDiff<DJISDKNode::PACKAGE_ID_400HZ>(msg_time, p->stamp_diff_400hz_pub);
 }
@@ -856,8 +857,8 @@ bool DJISDKNode::get400HzTimestamp
 (
   const Telemetry::SyncTimestamp& hardsyncTimeStamp,
   const Telemetry::TimeStamp& packageTimeStamp,
-  const ros::Time& now_time,
-  ros::Time& time_out
+  const rclcpp::Time& now_time,
+  rclcpp::Time& time_out
 )
 {
 #ifndef COMPARE_PPS_AND_SOFTSYNC
@@ -866,16 +867,16 @@ bool DJISDKNode::get400HzTimestamp
     case PPS_SYNC: {
       if (!pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, time_out))
       {
-        ROS_WARN_STREAM_THROTTLE(3.0, "[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
+        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 3000, "[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
         return false;
       }
       if (hardsyncTimeStamp.flag)
       {
-        sensor_msgs::TimeReference trigTime;
+        sensor_msgs::msg::TimeReference trigTime;
         trigTime.source       = "hard-sync";
         trigTime.header.stamp = time_out;
         trigTime.time_ref     = now_time;
-        trigger_publisher.publish(trigTime);
+        trigger_publisher->publish(trigTime);
       }
     } break;
     case SOFT_SYNC: {
@@ -888,11 +889,11 @@ bool DJISDKNode::get400HzTimestamp
 
       if (hardsyncTimeStamp.flag)
       {
-        sensor_msgs::TimeReference trigTime;
+        sensor_msgs::msg::TimeReference trigTime;
         trigTime.source       = "soft-sync";
         trigTime.header.stamp = time_out;
         trigTime.time_ref     = now_time;
-        trigger_publisher.publish(trigTime);
+        trigger_publisher->publish(trigTime);
       }
     } break;
     default: {
@@ -902,10 +903,10 @@ bool DJISDKNode::get400HzTimestamp
   return true;
 #else
   // PPS
-  ros::Time pps_time;
+  rclcpp::Time pps_time;
   const bool pps_ok{pps_sync_->getSystemTime(hardsyncTimeStamp, packageTimeStamp, pps_time)};
   // Softsync
-  ros::Time softsync_time;
+  rclcpp::Time softsync_time;
   const bool softsync_ok{curr_align_state == ALIGNED};
   if(!softsync_ok)
     alignRosTimeWithFlightController(now_time, packageTimeStamp.time_ms);
@@ -916,35 +917,35 @@ bool DJISDKNode::get400HzTimestamp
   const bool ok{pps_ok && softsync_ok};
   if (ok)
   {
-    dji_sdk::Int64Stamped softsync_lag;
+    dji_sdk::msg::Int64Stamped softsync_lag;
     softsync_lag.header.stamp = pps_time;
-    softsync_lag.data         = (softsync_time - pps_time).toNSec();
-    softsync_400hz_lag_pub.publish(softsync_lag);
+    softsync_lag.data         = (softsync_time - pps_time).nanoseconds();
+    softsync_400hz_lag_pub->publish(softsync_lag);
 
-    dji_sdk::HardSyncDebugStamped hs_dbg;
+    dji_sdk::msg::HardSyncDebugStamped hs_dbg;
     hs_dbg.header.stamp                       = pps_time;
     hs_dbg.hardsync_timestamp.time2p5ms       = hardsyncTimeStamp.time2p5ms;
     hs_dbg.hardsync_timestamp.time1ns         = hardsyncTimeStamp.time1ns;
     hs_dbg.hardsync_timestamp.reset_time2p5ms = hardsyncTimeStamp.resetTime2p5ms;
     hs_dbg.hardsync_timestamp.index           = hardsyncTimeStamp.index;
     hs_dbg.hardsync_timestamp.flag            = hardsyncTimeStamp.flag;
-    hardsync_debug_publisher.publish(hs_dbg);
+    hardsync_debug_publisher->publish(hs_dbg);
 
-    dji_sdk::PackageTimestampDebugStamped pts_dbg;
+    dji_sdk::msg::PackageTimestampDebugStamped pts_dbg;
     pts_dbg.header.stamp              = pps_time;
     pts_dbg.package_timestamp.time_ms = packageTimeStamp.time_ms;
     pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
-    packagetimestamp_400Hz_debug_publisher.publish(pts_dbg);
+    packagetimestamp_400Hz_debug_publisher->publish(pts_dbg);
 
   }
   time_out = pps_time;
   if (ok && hardsyncTimeStamp.flag)
   {
-    sensor_msgs::TimeReference trigTime;
+    sensor_msgs::msg::TimeReference trigTime;
     trigTime.source       = "hard-sync";
     trigTime.header.stamp = time_out;
     trigTime.time_ref     = now_time;
-    trigger_publisher.publish(trigTime);
+    trigger_publisher->publish(trigTime);
   }
   return ok;
 #endif
@@ -953,8 +954,8 @@ bool DJISDKNode::get400HzTimestamp
 bool DJISDKNode::getSub400HzTimestamp
 (
   const Telemetry::TimeStamp& packageTimeStamp,
-  const ros::Time& now_time,
-  ros::Time& time_out
+  const rclcpp::Time& now_time,
+  rclcpp::Time& time_out
 )
 {
 #ifndef COMPARE_PPS_AND_SOFTSYNC
@@ -963,7 +964,7 @@ bool DJISDKNode::getSub400HzTimestamp
     case PPS_SYNC: {
       if (!pps_sync_->getSystemTime(packageTimeStamp, time_out))
       {
-        ROS_WARN_STREAM_THROTTLE(3.0, "[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
+        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 3000, "[dji_sdk] Could not align time based on PPS as no alignment exists yet.");
         return false;
       }
     } break;
@@ -977,27 +978,27 @@ bool DJISDKNode::getSub400HzTimestamp
   }
   return true;
 #else
-  ros::Time pps_time;
+  rclcpp::Time pps_time;
   const bool pps_ok{true};
   pps_sync_->getSystemTime(packageTimeStamp, pps_time);
 
-  ros::Time softsync_time;
+  rclcpp::Time softsync_time;
   const bool softsync_ok{curr_align_state == ALIGNED};
   softsync_time = base_time + _TICK2ROSTIME(packageTimeStamp.time_ms);
 
   const bool ok{pps_ok && softsync_ok};
   if (ok)
   {
-    dji_sdk::Int64Stamped softsync_lag;
+    dji_sdk::msg::Int64Stamped softsync_lag;
     softsync_lag.header.stamp = pps_time;
-    softsync_lag.data         = (softsync_time - pps_time).toNSec();
-    softsync_sub400hz_lag_pub.publish(softsync_lag);
+    softsync_lag.data         = (softsync_time - pps_time).nanoseconds();
+    softsync_sub400hz_lag_pub->publish(softsync_lag);
 
-    dji_sdk::PackageTimestampDebugStamped pts_dbg;
+    dji_sdk::msg::PackageTimestampDebugStamped pts_dbg;
     pts_dbg.header.stamp              = pps_time;
     pts_dbg.package_timestamp.time_ms = packageTimeStamp.time_ms;
     pts_dbg.package_timestamp.time_ns = packageTimeStamp.time_ns;
-    packagetimestamp_sub400Hz_debug_publisher.publish(pts_dbg);
+    packagetimestamp_sub400Hz_debug_publisher->publish(pts_dbg);
   }
   time_out = pps_time;
   return ok;
@@ -1011,13 +1012,13 @@ bool DJISDKNode::getSub400HzTimestamp
  *         be affected by OS scheduling depending on system load.
  */
 
-void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t tick)
+void DJISDKNode::alignRosTimeWithFlightController(rclcpp::Time now_time, uint32_t tick)
 {
   if (curr_align_state == UNALIGNED)
   {
     base_time = now_time - _TICK2ROSTIME(tick);
     curr_align_state = ALIGNING;
-    ROS_INFO("[dji_sdk] Start time alignment ...");
+    RCLCPP_INFO(get_logger(), "[dji_sdk] Start time alignment ...");
     return;
   }
 
@@ -1026,9 +1027,9 @@ void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t t
     static int aligned_count = 0;
     static int retry_count = 0;
     constexpr int MAX_RETRIES = 500;
-    ROS_INFO_THROTTLE(1.0, "[dji_sdk] Aligning time...");
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "[dji_sdk] Aligning time...");
 
-    double dt = std::fabs((now_time - (base_time + _TICK2ROSTIME(tick))).toSec());
+    double dt = std::fabs((now_time - (base_time + _TICK2ROSTIME(tick))).seconds());
 
     if(dt < TIME_DIFF_CHECK )
     {
@@ -1037,7 +1038,7 @@ void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t t
     else if(aligned_count > 0)
     {
       base_time = now_time - _TICK2ROSTIME(tick);
-      ROS_INFO("[dji_sdk] ***** Time difference out of bound after %d samples, retried %d times, dt=%.3f... *****",
+      RCLCPP_INFO(get_logger(), "[dji_sdk] ***** Time difference out of bound after %d samples, retried %d times, dt=%.3f... *****",
                aligned_count, retry_count, dt);
       aligned_count = 0;
       retry_count++;
@@ -1045,13 +1046,13 @@ void DJISDKNode::alignRosTimeWithFlightController(ros::Time now_time, uint32_t t
 
     if(aligned_count > STABLE_ALIGNMENT_COUNT)
     {
-      ROS_INFO("[dji_sdk] ***** Time alignment successful! *****");
+      RCLCPP_INFO(get_logger(), "[dji_sdk] ***** Time alignment successful! *****");
       curr_align_state = ALIGNED;
     }
     else if (retry_count > MAX_RETRIES)
     {
-      ROS_ERROR("[dji_sdk] ***** Max time alignment retries exceeded, shutting down. *****");
-      ros::shutdown();
+      RCLCPP_ERROR(get_logger(), "[dji_sdk] ***** Max time alignment retries exceeded, shutting down. *****");
+      rclcpp::shutdown();
     }
 
     return;

@@ -12,7 +12,6 @@
 #include <dji_sdk/dji_sdk_node.h>
 
 using namespace DJI::OSDK;
-using std::placeholders;
 
 DJISDKNode::DJISDKNode(std::string&& name):
 Node{name},
@@ -62,7 +61,7 @@ curr_align_state(UNALIGNED)
 
   // @todo need some error handling for init functions
   //! @note parsing launch file to get environment parameters
-  if (!initVehicle(nh_private))
+  if (!initVehicle())
   {
     RCLCPP_ERROR(get_logger(), "Vehicle initialization failed");
     rclcpp::shutdown();
@@ -92,14 +91,14 @@ curr_align_state(UNALIGNED)
 
     pps::Handler::CreationStatus pps_creation_status{pps::Handler::CreationStatus::OK};
     pps_sync_ = std::unique_ptr<DJISDK::Synchronizer>(new DJISDK::Synchronizer{
-      nh_private,
+      shared_from_this(),
       pps_device_path,
       pps_window_half_width_sec,
       pps_creation_status
     });
     if (pps_creation_status != pps::Handler::CreationStatus::OK)
     {
-      RCLCPP_ERROR(get_logger(), "[dji_sdk] PPS init error " << pps_creation_status << ". Shutting down.");
+      RCLCPP_ERROR_STREAM(get_logger(), "[dji_sdk] PPS init error " << pps_creation_status << ". Shutting down.");
       rclcpp::shutdown();
       return;
     }
@@ -202,6 +201,8 @@ DJISDKNode::initVehicle(void)
 // clang-format off
 bool DJISDKNode::initServices(void) {
   // Common to A3/N3 and M100
+  using namespace std::placeholders;
+
   drone_activation_server   = create_service<dji_sdk::srv::Activation>("dji_sdk/activation",                     std::bind(&DJISDKNode::droneActivationCallback, this, _1, _2));
   drone_arm_server          = create_service<dji_sdk::srv::DroneArmControl>("dji_sdk/drone_arm_control",              std::bind(&DJISDKNode::droneArmCallback, this, _1, _2));
   drone_task_server         = create_service<dji_sdk::srv::DroneTaskControl>("dji_sdk/drone_task_control",             std::bind(&DJISDKNode::droneTaskCallback, this, _1, _2));
@@ -244,6 +245,8 @@ bool DJISDKNode::initServices(void) {
 bool
 DJISDKNode::initFlightControl(void)
 {
+  using namespace std::placeholders;
+
   flight_control_sub = create_subscription<sensor_msgs::msg::Joy>(
     "dji_sdk/flight_control_setpoint_generic", 10,
     std::bind(&DJISDKNode::flightControlSetpointCallback, this, _1));
@@ -289,6 +292,8 @@ DJISDKNode::activate(int l_app_id, std::string l_enc_key)
 bool
 DJISDKNode::initSubscriber(void)
 {
+  using namespace std::placeholders;
+
   gimbal_angle_cmd_subscriber = create_subscription<dji_sdk::msg::Gimbal>(
     "dji_sdk/gimbal_angle_cmd", 10, std::bind(&DJISDKNode::gimbalAngleCtrlCallback, this, _1));
   gimbal_speed_cmd_subscriber = create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -373,13 +378,13 @@ DJISDKNode::initPublisher(void)
       create_publisher<dji_sdk::msg::DateTimeStamped>("dji_sdk/gps_datetime", 10);
 
   local_frame_ref_publisher =
-      create_publisher<sensor_msgs::msg::NavSatFix>("dji_sdk/local_frame_ref", 10, true);
+      create_publisher<sensor_msgs::msg::NavSatFix>("dji_sdk/local_frame_ref", rclcpp::QoS(10).transient_local());
 
   local_rtk_position_publisher =
       create_publisher<dji_sdk::msg::RTKPosition>("dji_sdk/local_rtk_position", 10);
 
   local_rtk_frame_ref_publisher =
-      create_publisher<sensor_msgs::msg::NavSatFix>("dji_sdk/local_rtk_frame_ref", 10, true);
+      create_publisher<sensor_msgs::msg::NavSatFix>("dji_sdk/local_rtk_frame_ref", rclcpp::QoS(10).transient_local());
 
   local_rtk_fused_position_publisher =
       create_publisher<geometry_msgs::msg::PointStamped>("dji_sdk/local_rtk_fused_position", 10);
@@ -708,8 +713,7 @@ DJISDKNode::initDataSubscribeFromFC(void)
       vehicle->subscribe->registerUserPackageUnpackCallback(PACKAGE_ID_400HZ, publish400HzData, this);
     }
   }
-
-  ros::Duration(1).sleep();
+  rclcpp::sleep_for(std::chrono::seconds(1));
   return true;
 }
 

@@ -10,6 +10,7 @@
  */
 
 #include <dji_sdk/dji_sdk_node.h>
+#include <dji_sdk/dji_sdk_geometry.h>
 
 void
 DJISDKNode::gimbalAngleCtrlCallback(const dji_sdk::msg::Gimbal::SharedPtr msg)

@@ -10,6 +10,7 @@
  */
 
 #include <dji_sdk/dji_sdk_node.h>
+#include <dji_sdk/dji_sdk_geometry.h>
 
 bool
 DJISDKNode::missionStatusCallback(const dji_sdk::srv::MissionStatus::Request::SharedPtr request,
@@ -17,8 +18,8 @@ DJISDKNode::missionStatusCallback(const dji_sdk::srv::MissionStatus::Request::Sh
 {
   RCLCPP_DEBUG(get_logger(), "called missionStatusCallback");
 
-  response.waypoint_mission_count = vehicle->missionManager->wpMissionVector.size();
-  response.hotpoint_mission_count = vehicle->missionManager->hpMissionVector.size();
+  response->waypoint_mission_count = vehicle->missionManager->wpMissionVector.size();
+  response->hotpoint_mission_count = vehicle->missionManager->hpMissionVector.size();
   return true;
 }
 
@@ -32,15 +33,15 @@ DJISDKNode::missionWpUploadCallback(
   //! initialize waypoint mission related info
   ACK::ErrorCode                  initAck;
   DJI::OSDK::WayPointInitSettings wpInitData;
-  wpInitData.indexNumber  = (unsigned char)request.waypoint_task.mission_waypoint.size();
-  wpInitData.maxVelocity  = (float)request.waypoint_task.velocity_range;
-  wpInitData.idleVelocity = (float)request.waypoint_task.idle_velocity;
-  wpInitData.finishAction = (unsigned char)request.waypoint_task.action_on_finish;
-  wpInitData.executiveTimes = (unsigned char)request.waypoint_task.mission_exec_times;
-  wpInitData.yawMode        = (unsigned char)request.waypoint_task.yaw_mode;
-  wpInitData.traceMode      = (unsigned char)request.waypoint_task.trace_mode;
-  wpInitData.RCLostAction   = (unsigned char)request.waypoint_task.action_on_rc_lost;
-  wpInitData.gimbalPitch    = (unsigned char)request.waypoint_task.gimbal_pitch_mode;
+  wpInitData.indexNumber  = (unsigned char)request->waypoint_task.mission_waypoint.size();
+  wpInitData.maxVelocity  = (float)request->waypoint_task.velocity_range;
+  wpInitData.idleVelocity = (float)request->waypoint_task.idle_velocity;
+  wpInitData.finishAction = (unsigned char)request->waypoint_task.action_on_finish;
+  wpInitData.executiveTimes = (unsigned char)request->waypoint_task.mission_exec_times;
+  wpInitData.yawMode        = (unsigned char)request->waypoint_task.yaw_mode;
+  wpInitData.traceMode      = (unsigned char)request->waypoint_task.trace_mode;
+  wpInitData.RCLostAction   = (unsigned char)request->waypoint_task.action_on_rc_lost;
+  wpInitData.gimbalPitch    = (unsigned char)request->waypoint_task.gimbal_pitch_mode;
   wpInitData.latitude = 0.0;
   wpInitData.longitude = 0.0;
   wpInitData.altitude = 0.0;
@@ -55,14 +56,14 @@ DJISDKNode::missionWpUploadCallback(
             initAck.info.cmd_id);
   RCLCPP_DEBUG(get_logger(), "ack.data: %i", initAck.data);
 
-  response.cmd_set  = (int)initAck.info.cmd_set;
-  response.cmd_id   = (int)initAck.info.cmd_id;
-  response.ack_data = (unsigned int)initAck.data;
+  response->cmd_set  = (int)initAck.info.cmd_set;
+  response->cmd_id   = (int)initAck.info.cmd_id;
+  response->ack_data = (unsigned int)initAck.data;
 
   if (ACK::getError(initAck))
   {
     ACK::getErrorCodeMessage(initAck, __func__);
-    response.result = false;
+    response->result = false;
   }
 
   RCLCPP_INFO(get_logger(), "initialized waypoint mission");
@@ -72,7 +73,7 @@ DJISDKNode::missionWpUploadCallback(
   ACK::WayPointIndex          uploadAck;
   DJI::OSDK::WayPointSettings wpData;
   int                         i = 0;
-  for (auto waypoint : request.waypoint_task.mission_waypoint)
+  for (auto waypoint : request->waypoint_task.mission_waypoint)
   {
     wpData.latitude        = waypoint.latitude  * C_PI / 180;
     wpData.longitude       = waypoint.longitude * C_PI / 180;
@@ -98,18 +99,18 @@ DJISDKNode::missionWpUploadCallback(
     RCLCPP_DEBUG(get_logger(), "uploaded waypoint lat: %f lon: %f alt: %f", waypoint.latitude,
               waypoint.longitude, waypoint.altitude);
 
-    response.cmd_set  = (int)uploadAck.ack.info.cmd_set;
-    response.cmd_id   = (int)uploadAck.ack.info.cmd_id;
-    response.ack_data = (unsigned int)uploadAck.ack.data;
+    response->cmd_set  = (int)uploadAck.ack.info.cmd_set;
+    response->cmd_id   = (int)uploadAck.ack.info.cmd_id;
+    response->ack_data = (unsigned int)uploadAck.ack.data;
 
     if (ACK::getError(uploadAck.ack))
     {
       ACK::getErrorCodeMessage(uploadAck.ack, __func__);
-      response.result = false;
+      response->result = false;
     }
     else
     {
-      response.result = true;
+      response->result = true;
     }
 
     RCLCPP_INFO(get_logger(), "uploaded the %dth waypoint\n", (wpData.index + 1));
@@ -188,7 +189,7 @@ DJISDKNode::missionWpGetSpeedCallback(
   if (vehicle->missionManager->wpMissionVector.size() > 0)
   {
     //! @todo bug here
-    //    response.speed =
+    //    response->speed =
     //      (vehicle->missionManager->wpMission->readIdleVelocity(WAIT_TIMEOUT))
     //        .idleVelocity;
     //    vehicle->missionManager->wpMission->readIdleVelocity();
@@ -198,7 +199,7 @@ DJISDKNode::missionWpGetSpeedCallback(
     RCLCPP_ERROR(get_logger(), "no waypoint mission initiated ");
   }
   // @todo some bug in FC side, need to follow up
-  std::cout << "response.speed " << response->speed << std::endl;
+  std::cout << "response->speed " << response->speed << std::endl;
 
   return true;
 }

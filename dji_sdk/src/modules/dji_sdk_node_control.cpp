@@ -10,6 +10,7 @@
  */
 
 #include <dji_sdk/dji_sdk_node.h>
+#include <dji_sdk/dji_sdk_geometry.h>
 
 /*!
  * @brief The flight controller takes control signals with frame convention:

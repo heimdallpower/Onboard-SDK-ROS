@@ -15,9 +15,11 @@ endif()
 ## Find ament and other ROS 2 packages
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rcpputils REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(nmea_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -90,7 +92,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/StereoVGASubscription.srv"
   "srv/StereoDepthSubscription.srv"
   "srv/SetupCameraStream.srv"
-  DEPENDENCIES builtin_interfaces geometry_msgs nav_msgs std_msgs sensor_msgs
+  DEPENDENCIES builtin_interfaces geometry_msgs nav_msgs nmea_msgs std_msgs sensor_msgs
 )
 
 ###########
@@ -131,6 +133,7 @@ ament_target_dependencies(dji_sdk_geometry
   rclcpp
   geometry_msgs
   nav_msgs
+  nmea_msgs
   std_msgs
   sensor_msgs
   tf2_ros
@@ -141,6 +144,7 @@ ament_target_dependencies(dji_sdk_node
   rclcpp
   geometry_msgs
   nav_msgs
+  nmea_msgs
   std_msgs
   sensor_msgs
   tf2_ros

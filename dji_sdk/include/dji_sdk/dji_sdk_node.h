@@ -18,7 +18,8 @@
 #include <rclcpp/rclcpp.hpp>
 
 //! ROS standard msgs
-#include <geometry_msgs/msg/quaternion.hpp>
+#include <geometry_msgs/msg/quaternion_stamped.hpp>
+#include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -33,6 +34,7 @@
 #include <std_msgs/msg/string.hpp>
 #include <nmea_msgs/msg/sentence.hpp>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 //! msgs
 #include <dji_sdk/msg/gimbal.hpp>
@@ -463,14 +465,14 @@ private:
   static double constexpr TIME_DIFF_ALERT = 0.020;
   static uint8_t constexpr RTK_FIX_THRESHOLD = 40;
 
-  ros::Time base_time;
+  rclcpp::Time base_time;
 
   bool align_time_with_FC;
 
   bool local_pos_ref_set;
   bool local_rtk_pos_ref_set;
 
-  void alignRosTimeWithFlightController(ros::Time now_time, uint32_t tick);
+  void alignRosTimeWithFlightController(rclcpp::Time now_time, uint32_t tick);
   void setUpM100DefaultFreq(uint8_t freq[16]);
   void setUpA3N3DefaultFreq(uint8_t freq[16]);
   std::string controlAuthorityErrorString(const uint32_t error_code);
@@ -497,15 +499,15 @@ private:
   (
     const Telemetry::SyncTimestamp& hardsyncTimeStamp,
     const Telemetry::TimeStamp& packageTimeStamp,
-    const ros::Time& now_time,
-    ros::Time& data_time_of_measurement_out
+    const rclcpp::Time& now_time,
+    rclcpp::Time& data_time_of_measurement_out
   );
 
   bool getSub400HzTimestamp
   (
     const Telemetry::TimeStamp& packageTimeStamp,
-    const ros::Time& now_time,
-    ros::Time& data_time_of_measurement_out
+    const rclcpp::Time& now_time,
+    rclcpp::Time& data_time_of_measurement_out
   );
 
 };

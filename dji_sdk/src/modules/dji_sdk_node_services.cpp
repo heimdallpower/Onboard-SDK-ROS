@@ -10,6 +10,7 @@
  */
 
 #include <dji_sdk/dji_sdk_node.h>
+#include <dji_sdk/dji_sdk_geometry.h>
 
 bool
 DJISDKNode::droneActivationCallback(const dji_sdk::srv::Activation::Request::SharedPtr request,
