@@ -26,6 +26,7 @@ find_package(tf2_ros REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 # find_package(djiosdk-core QUIET)
 find_package(DJIOSDK REQUIRED)
+find_package(Threads REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -213,7 +214,7 @@ install(DIRECTORY launch
 
 ament_export_include_directories(include)
 ament_export_targets(dji_sdk_geometryTargets HAS_LIBRARY_TARGET)
-ament_export_dependencies(rosidl_default_runtime)
+ament_export_dependencies(rosidl_default_runtime DJIOSDK Threads Boost rclcpp geometry_msgs nav_msgs nmea_msgs std_msgs sensor_msgs tf2_ros)
 
 ament_package()
 
