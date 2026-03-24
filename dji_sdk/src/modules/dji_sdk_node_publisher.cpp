@@ -851,6 +851,8 @@ DJISDKNode::publish400HzData(Vehicle *vehicle, RecvContainer recvFrame,
   p->imu_publisher.publish(synced_imu);
 
   publishStampDiff<DJISDKNode::PACKAGE_ID_400HZ>(msg_time, p->stamp_diff_400hz_pub);
+
+  p->setDataRecieved();
 }
 
 bool DJISDKNode::get400HzTimestamp
