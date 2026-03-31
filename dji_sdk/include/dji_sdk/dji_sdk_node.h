@@ -130,7 +130,7 @@ public:
 
 private:
   void fcCommunicationWatchdogCallback(const ros::TimerEvent& event);
-  bool initVehicle(void);
+  bool initVehicle(int activation_timeout_sec=WAIT_TIMEOUT);
   bool initServices(ros::NodeHandle& nh);
   bool initFlightControl(ros::NodeHandle& nh);
   bool initSubscriber(ros::NodeHandle& nh);
@@ -148,7 +148,7 @@ private:
    *        we cannot call a service without serviceClient, which is in another
    * node
    */
-  ACK::ErrorCode activate(int l_app_id, std::string l_enc_key);
+  ACK::ErrorCode activate(int l_app_id, std::string l_enc_key, int timeout_sec=WAIT_TIMEOUT);
 
   //! flight control subscriber callbacks
   void flightControlSetpointCallback(
@@ -451,9 +451,9 @@ private:
   bool rerequest_sdk_ctrl_on_fc_coms_reestablished_{false};
 
   //! constant
-  const int WAIT_TIMEOUT           = 10;
-  const int MAX_SUBSCRIBE_PACKAGES = 5;
-  const int INVALID_VERSION        = 0;
+  static constexpr int WAIT_TIMEOUT{10};
+  static constexpr int MAX_SUBSCRIBE_PACKAGES{5};
+  static constexpr int INVALID_VERSION{0};
 
   //! configurations
   int         app_id;

@@ -162,7 +162,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
     vehicle = nullptr;
   }
 
-  if (!initVehicle())
+  if (!initVehicle(1))
   {
     delete vehicle;
     vehicle = nullptr;
@@ -221,7 +221,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
 }
 
 bool
-DJISDKNode::initVehicle(void)
+DJISDKNode::initVehicle(int activation_timeout_sec)
 {
   bool threadSupport = true;
   bool enable_advanced_sensing = false;
@@ -239,7 +239,7 @@ DJISDKNode::initVehicle(void)
    *        user can also call it as a service
    *        this has been tested by giving wrong appID in launch file
    */
-  if (ACK::getError(this->activate(this->app_id, this->enc_key)))
+  if (ACK::getError(this->activate(this->app_id, this->enc_key, activation_timeout_sec)))
   {
     ROS_ERROR("drone activation error");
     return false;
@@ -339,17 +339,16 @@ bool DJISDKNode::isM100()
 
 
 ACK::ErrorCode
-DJISDKNode::activate(int l_app_id, std::string l_enc_key)
+DJISDKNode::activate(int l_app_id, std::string l_enc_key, int timeout_sec)
 {
-  usleep(1000000);
   Vehicle::ActivateData testActivateData;
   char                  app_key[65];
   testActivateData.encKey = app_key;
   strcpy(testActivateData.encKey, l_enc_key.c_str());
   testActivateData.ID = l_app_id;
 
-  ROS_DEBUG("called vehicle->activate(&testActivateData, WAIT_TIMEOUT)");
-  return vehicle->activate(&testActivateData, WAIT_TIMEOUT);
+  ROS_DEBUG_STREAM("called vehicle->activate(&testActivateData, " << timeout_sec << ")");
+  return vehicle->activate(&testActivateData, timeout_sec);
 }
 
 bool
