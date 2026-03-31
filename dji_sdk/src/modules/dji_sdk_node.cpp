@@ -153,6 +153,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
   if (data_recieved)
     return;
 
+  fc_communication_watchdog_timer_.stop(); // Avoid concurrent calls due to AsyncSpinner
   ROS_ERROR_STREAM("No data recieved during the last " << (event.current_real - event.last_real).toSec() << " seconds.");
 
   if (vehicle)
@@ -168,6 +169,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
     vehicle = nullptr;
     ROS_ERROR_STREAM("Re-initing vehicle failed. Retrying in " << FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD.toSec() << " seconds.");
     fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, true);
+    fc_communication_watchdog_timer_.start();
     return;
   }
 
@@ -175,6 +177,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
   {
     ROS_ERROR_STREAM("Restarting data subscription from FC failed. Retrying in " << FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD.toSec() << " seconds.");
     fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, true);
+    fc_communication_watchdog_timer_.start();
   }
   else
   {
@@ -188,6 +191,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
       vehicle->hardSync->subscribePPSSource(PPSSourceCallback, this);
     }
     fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_NOMINAL_PERIOD, true);
+    fc_communication_watchdog_timer_.start();
   }
 
   if (rerequest_sdk_ctrl_on_fc_coms_reestablished_)
