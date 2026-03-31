@@ -166,6 +166,8 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
   {
     ROS_ERROR_STREAM("Re-initing vehicle failed. Retrying in " << FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD.toSec() << " seconds.");
     fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, true);
+    delete vehicle;
+    vehicle = nullptr;
     return;
   }
 
