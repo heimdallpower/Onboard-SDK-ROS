@@ -127,6 +127,9 @@ DJISDKNode::sdkCtrlAuthorityCallback(
     response.result = true;
   }
 
+  if (response.result)
+    rerequest_sdk_ctrl_on_fc_coms_reestablished_ = (request.control_enable == dji_sdk::SDKControlAuthorityRequest::REQUEST_CONTROL);
+
   return true;
 }
 

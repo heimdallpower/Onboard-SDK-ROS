@@ -129,14 +129,15 @@ public:
   };
 
 private:
-  bool initVehicle(ros::NodeHandle& nh_private);
+  void fcCommunicationWatchdogCallback(const ros::TimerEvent& event);
+  bool initVehicle(int activation_timeout_sec=WAIT_TIMEOUT);
   bool initServices(ros::NodeHandle& nh);
   bool initFlightControl(ros::NodeHandle& nh);
   bool initSubscriber(ros::NodeHandle& nh);
   bool initPublisher(ros::NodeHandle& nh);
   bool initActions(ros::NodeHandle& nh);
   bool initDataSubscribeFromFC(ros::NodeHandle& nh);
-  void cleanUpSubscribeFromFC();
+  void cleanUpSubscribeFromFC(int timeout_sec);
   bool validateSerialDevice(LinuxSerialDevice* serialDevice);
   bool isM100();
 
@@ -147,7 +148,7 @@ private:
    *        we cannot call a service without serviceClient, which is in another
    * node
    */
-  ACK::ErrorCode activate(int l_app_id, std::string l_enc_key);
+  ACK::ErrorCode activate(int l_app_id, std::string l_enc_key, int timeout_sec=WAIT_TIMEOUT);
 
   //! flight control subscriber callbacks
   void flightControlSetpointCallback(
@@ -315,6 +316,7 @@ private:
 #endif
 
 private:
+  ros::NodeHandle nh_;
   //! OSDK core
   Vehicle* vehicle;
   //! general service servers
@@ -440,10 +442,18 @@ private:
   ros::Publisher main_camera_stream_publisher;
   ros::Publisher fpv_camera_stream_publisher;
 #endif
+
+  const ros::Duration FC_COMMUNICATION_WATCHDOG_NOMINAL_PERIOD{1.0};
+  const ros::Duration FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD{0.5};
+  ros::Timer fc_communication_watchdog_timer_;
+  std::atomic_bool has_recieved_data_since_prev_check_{false};
+
+  bool rerequest_sdk_ctrl_on_fc_coms_reestablished_{false};
+
   //! constant
-  const int WAIT_TIMEOUT           = 10;
-  const int MAX_SUBSCRIBE_PACKAGES = 5;
-  const int INVALID_VERSION        = 0;
+  static constexpr int WAIT_TIMEOUT{10};
+  static constexpr int MAX_SUBSCRIBE_PACKAGES{5};
+  static constexpr int INVALID_VERSION{0};
 
   //! configurations
   int         app_id;
@@ -528,6 +538,7 @@ private:
     ros::Time& data_time_of_measurement_out
   );
 
+  void setDataRecieved(void);
 };
 
 #endif // DJI_SDK_NODE_MAIN_H

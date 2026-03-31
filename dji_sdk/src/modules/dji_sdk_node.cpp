@@ -14,7 +14,8 @@
 using namespace DJI::OSDK;
 
 DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
-  : telemetry_from_fc(USE_BROADCAST),
+  : nh_{nh},
+    telemetry_from_fc(USE_BROADCAST),
     R_FLU2FRD(tf::Matrix3x3(1,  0,  0, 0, -1,  0, 0,  0, -1)),
     R_ENU2NED(tf::Matrix3x3(0,  1,  0, 1,  0,  0, 0,  0, -1)),
     curr_align_state(UNALIGNED)
@@ -50,7 +51,7 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
 
   // @todo need some error handling for init functions
   //! @note parsing launch file to get environment parameters
-  if (!initVehicle(nh_private))
+  if (!initVehicle())
   {
     ROS_ERROR("Vehicle initialization failed");
     ros::shutdown();
@@ -126,13 +127,18 @@ DJISDKNode::DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     ROS_ERROR("initPublisher failed");
     ros::shutdown();
   }
+
+  fc_communication_watchdog_timer_ = nh_.createTimer(
+    FC_COMMUNICATION_WATCHDOG_NOMINAL_PERIOD,
+    &DJISDKNode::fcCommunicationWatchdogCallback, this
+  );
 }
 
 DJISDKNode::~DJISDKNode()
 {
   if(!isM100())
   {
-    cleanUpSubscribeFromFC();
+    cleanUpSubscribeFromFC(WAIT_TIMEOUT);
   }
   if (vehicle)
   {
@@ -140,8 +146,86 @@ DJISDKNode::~DJISDKNode()
   }
 }
 
+void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
+{
+  const bool data_recieved{has_recieved_data_since_prev_check_};
+  has_recieved_data_since_prev_check_ = false;
+  if (data_recieved)
+    return;
+
+  fc_communication_watchdog_timer_.stop(); // Avoid concurrent calls due to AsyncSpinner
+  ROS_ERROR_STREAM("No data recieved during the last " << (event.current_real - event.last_real).toSec() << " seconds.");
+
+  if (vehicle)
+  {
+    cleanUpSubscribeFromFC(1u);
+    delete vehicle;
+    vehicle = nullptr;
+  }
+
+  if (!initVehicle(1))
+  {
+    delete vehicle;
+    vehicle = nullptr;
+    ROS_ERROR_STREAM("Re-initing vehicle failed. Retrying in " << FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD.toSec() << " seconds.");
+    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, true);
+    fc_communication_watchdog_timer_.start();
+    return;
+  }
+
+  if (!initDataSubscribeFromFC(nh_))
+  {
+    ROS_ERROR_STREAM("Restarting data subscription from FC failed. Retrying in " << FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD.toSec() << " seconds.");
+    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, true);
+    fc_communication_watchdog_timer_.start();
+  }
+  else
+  {
+    ROS_INFO_STREAM("Data subscription from FC restarted successfully");
+    if (pps_sync_)
+    {
+      vehicle->hardSync->setSyncFreq(1ul);
+      vehicle->hardSync->subscribeNMEAMsgs(NMEACallback, this);
+      vehicle->hardSync->subscribeUTCTime(GPSUTCTimeCallback, this);
+      vehicle->hardSync->subscribeFCTimeInUTCRef(FCTimeInUTCCallback, this);
+      vehicle->hardSync->subscribePPSSource(PPSSourceCallback, this);
+    }
+    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_NOMINAL_PERIOD, true);
+    fc_communication_watchdog_timer_.start();
+  }
+
+  if (rerequest_sdk_ctrl_on_fc_coms_reestablished_)
+  {
+    //Attempt to obtain control
+    dji_sdk::SDKControlAuthority::Request request;
+    request.control_enable = dji_sdk::SDKControlAuthorityRequest::REQUEST_CONTROL;
+    dji_sdk::SDKControlAuthority::Response response;
+    sdkCtrlAuthorityCallback(request, response);
+    if (!response.result)
+    {
+      // Everything else is up and running. Should the request be attempted again?
+      ROS_ERROR_STREAM("Failed to obtain SDK control after re-initiating FC coms.");
+      return;
+    }
+    // Send control command to change the display mode to SDK control mode
+    constexpr uint8_t CONTROL_FLAG{
+      Control::HORIZONTAL_POSITION |
+      Control::VERTICAL_VELOCITY |
+      Control::YAW_RATE |
+      Control::HORIZONTAL_BODY |
+      Control::STABLE_DISABLE
+    };
+    flightControl(CONTROL_FLAG, 0.0, 0.0, 0.0, 0.0);
+    ROS_ERROR_STREAM("SDK control regained after re-initiating FC coms.");
+
+    // TODO: will display mode change instantly, or will a few messages containing
+    // a display mode other than MODE_NAVI_SDK_CTRL be published before? If so, ensure that
+    // the rest of the system handles it correctly
+  }
+}
+
 bool
-DJISDKNode::initVehicle(ros::NodeHandle& nh_private)
+DJISDKNode::initVehicle(int activation_timeout_sec)
 {
   bool threadSupport = true;
   bool enable_advanced_sensing = false;
@@ -159,7 +243,7 @@ DJISDKNode::initVehicle(ros::NodeHandle& nh_private)
    *        user can also call it as a service
    *        this has been tested by giving wrong appID in launch file
    */
-  if (ACK::getError(this->activate(this->app_id, this->enc_key)))
+  if (ACK::getError(this->activate(this->app_id, this->enc_key, activation_timeout_sec)))
   {
     ROS_ERROR("drone activation error");
     return false;
@@ -259,17 +343,16 @@ bool DJISDKNode::isM100()
 
 
 ACK::ErrorCode
-DJISDKNode::activate(int l_app_id, std::string l_enc_key)
+DJISDKNode::activate(int l_app_id, std::string l_enc_key, int timeout_sec)
 {
-  usleep(1000000);
   Vehicle::ActivateData testActivateData;
   char                  app_key[65];
   testActivateData.encKey = app_key;
   strcpy(testActivateData.encKey, l_enc_key.c_str());
   testActivateData.ID = l_app_id;
 
-  ROS_DEBUG("called vehicle->activate(&testActivateData, WAIT_TIMEOUT)");
-  return vehicle->activate(&testActivateData, WAIT_TIMEOUT);
+  ROS_DEBUG_STREAM("called vehicle->activate(&testActivateData, " << timeout_sec << ")");
+  return vehicle->activate(&testActivateData, timeout_sec);
 }
 
 bool
@@ -700,12 +783,12 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
 }
 
 void
-DJISDKNode::cleanUpSubscribeFromFC()
+DJISDKNode::cleanUpSubscribeFromFC(int timeout_sec)
 {
-  vehicle->subscribe->removePackage(0, WAIT_TIMEOUT);
-  vehicle->subscribe->removePackage(1, WAIT_TIMEOUT);
-  vehicle->subscribe->removePackage(2, WAIT_TIMEOUT);
-  vehicle->subscribe->removePackage(3, WAIT_TIMEOUT);
+  vehicle->subscribe->removePackage(0, timeout_sec);
+  vehicle->subscribe->removePackage(1, timeout_sec);
+  vehicle->subscribe->removePackage(2, timeout_sec);
+  vehicle->subscribe->removePackage(3, timeout_sec);
   if (vehicle->hardSync)
   {
     vehicle->hardSync->unsubscribeNMEAMsgs();
@@ -808,4 +891,9 @@ std::string DJISDKNode::controlAuthorityErrorString(const uint32_t error_code)
     return "IOC_OBTAIN_CONTROL_ERROR";
   else
     return "";
+}
+
+void DJISDKNode::setDataRecieved(void)
+{
+  has_recieved_data_since_prev_check_ = true;
 }
