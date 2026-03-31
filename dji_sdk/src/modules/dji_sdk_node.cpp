@@ -159,6 +159,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
   {
     cleanUpSubscribeFromFC(1u);
     delete vehicle;
+    vehicle = nullptr;
   }
 
   if (!initVehicle())
