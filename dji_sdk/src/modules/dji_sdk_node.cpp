@@ -164,14 +164,14 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
   if (!initVehicle())
   {
     ROS_ERROR_STREAM("Re-initing vehicle failed. Retrying in " << FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD.toSec() << " seconds.");
-    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, false);
+    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, true);
     return;
   }
 
   if (!initDataSubscribeFromFC(nh_))
   {
     ROS_ERROR_STREAM("Restarting data subscription from FC failed. Retrying in " << FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD.toSec() << " seconds.");
-    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, false);
+    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_RESTART_SUB_PERIOD, true);
   }
   else
   {
@@ -184,7 +184,7 @@ void DJISDKNode::fcCommunicationWatchdogCallback(const ros::TimerEvent& event)
       vehicle->hardSync->subscribeFCTimeInUTCRef(FCTimeInUTCCallback, this);
       vehicle->hardSync->subscribePPSSource(PPSSourceCallback, this);
     }
-    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_NOMINAL_PERIOD, false);
+    fc_communication_watchdog_timer_.setPeriod(FC_COMMUNICATION_WATCHDOG_NOMINAL_PERIOD, true);
   }
 
   if (rerequest_sdk_ctrl_on_fc_coms_reestablished_)
